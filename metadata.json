@@ -1,0 +1,6 @@
+{
+  "name": "PetMed Zdravotný Denník",
+  "description": "Kompletný zdravotný denník zvierat, evidencia liekov, dávkovania, vyšetrení, grafy hmotnosti, pripomienky, export záznamu veterinárovi, pohotovosti a fórum.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
