@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.MedicalServices
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Vaccines
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.LocalPharmacy
@@ -57,6 +58,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.local.VeterinaryDrug
 import com.example.data.local.entity.MedicalRecord
 import com.example.data.local.entity.Medication
 import com.example.data.local.entity.Pet
@@ -69,6 +71,7 @@ fun MedicalRecordsScreen(
     pet: Pet?,
     medicalRecords: List<MedicalRecord>,
     medications: List<Medication>,
+    latestWeight: Double? = null,
     onAddRecordClick: () -> Unit,
     onAddMedicationClick: () -> Unit,
     onDeleteRecord: (MedicalRecord) -> Unit,
@@ -76,10 +79,11 @@ fun MedicalRecordsScreen(
     onMarkDoseTaken: (Medication) -> Unit,
     onToggleMedActive: (Medication) -> Unit,
     onExportClick: () -> Unit,
+    onAssignDrugToPet: (VeterinaryDrug) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabTitles = listOf("Vyšetrenia & Očkovania", "Lieky & Dávkovanie", "Export Správy")
+    val tabTitles = listOf("Vyšetrenia", "Moje Lieky", "Databáza Liekov", "Export")
 
     val categories = listOf("Všetky", "Očkovanie", "Vyšetrenie", "Krvné testy", "RTG / Sono", "Odčervenie", "Zuby")
     var selectedCategoryFilter by remember { mutableStateOf("Všetky") }
@@ -98,7 +102,7 @@ fun MedicalRecordsScreen(
                             text = title,
                             fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal,
                             maxLines = 1,
-                            fontSize = 13.sp
+                            fontSize = 12.sp
                         )
                     }
                 )
@@ -205,19 +209,63 @@ fun MedicalRecordsScreen(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
-                        Button(
-                            onClick = onAddMedicationClick,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = PillPurple),
-                            modifier = Modifier.testTag("add_medication_screen_button")
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Pridať Liek", fontSize = 12.sp)
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Button(
+                                onClick = onAddMedicationClick,
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = PillPurple),
+                                modifier = Modifier.testTag("add_medication_screen_button")
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Pridať", fontSize = 12.sp)
+                            }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Shortcut to Drug Database
+                    Card(
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selectedTab = 2 }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text(
+                                        text = "Otvoriť Databázu Liekov & Letáky",
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                    Text(
+                                        text = "Bravecto, Apoquel, Meloxikam, NexGard, dávkovanie...",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     if (medications.isEmpty()) {
                         Box(
@@ -258,6 +306,17 @@ fun MedicalRecordsScreen(
             }
 
             2 -> {
+                // VETERINARY DRUG DATABASE & LEAFLETS
+                VeterinaryDrugDatabaseScreen(
+                    selectedPet = pet,
+                    latestWeight = latestWeight,
+                    onAssignDrugToPet = { drug ->
+                        onAssignDrugToPet(drug)
+                    }
+                )
+            }
+
+            3 -> {
                 // DIRECT EXPORT CARD
                 Column(
                     modifier = Modifier

@@ -2,6 +2,7 @@ package com.example.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,8 +21,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Female
 import androidx.compose.material.icons.filled.Male
 import androidx.compose.material.icons.filled.Pets
@@ -49,10 +53,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.data.local.entity.Pet
 import com.example.data.local.entity.WeightLog
 import com.example.ui.theme.MedicalGreen
@@ -67,111 +74,179 @@ fun PetTopSelectorBar(
     selectedPet: Pet?,
     onSelectPet: (Long) -> Unit,
     onAddPetClick: () -> Unit,
+    onEditPetClick: ((Pet) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Surface(
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp,
+        tonalElevation = 4.dp,
         modifier = modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Pets,
-                            contentDescription = "Pet Logo",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text(
-                            text = "PetMed Zdravotný Denník",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = if (selectedPet != null) "${selectedPet.name} (${selectedPet.species})" else "Žiadne zvieratko",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+        Box(modifier = Modifier.fillMaxWidth()) {
+            // Full background banner image with Horse, Dog and Cat line art
+            Image(
+                painter = painterResource(id = R.drawable.pet_vet_header_banner_1787724938076),
+                contentDescription = "Pozadie s koňom, psíkom a mačičkou",
+                modifier = Modifier.matchParentSize(),
+                contentScale = ContentScale.Crop
+            )
 
-                IconButton(
-                    onClick = onAddPetClick,
-                    modifier = Modifier
-                        .testTag("add_pet_top_button")
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Pridať zvieratko",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+            // Translucent overlay for optimal contrast and readability
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0.80f),
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
+                            )
+                        )
                     )
-                }
-            }
+            )
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Horizontal Scroll of Pets
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
-                pets.forEach { pet ->
-                    val isSelected = pet.id == selectedPet?.id
-                    val petColor = Color(pet.avatarColorHex)
-
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier
-                            .testTag("pet_chip_${pet.id}")
-                            .clip(RoundedCornerShape(20.dp))
-                            .clickable { onSelectPet(pet.id) }
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), CircleShape),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Box(
+                            Icon(
+                                imageVector = Icons.Default.Pets,
+                                contentDescription = "Pet Logo",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "PetMed Zdravotný Denník",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = if (selectedPet != null) "${selectedPet.name} (${selectedPet.species})" else "Žiadne zvieratko",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        if (selectedPet != null && onEditPetClick != null) {
+                            IconButton(
+                                onClick = { onEditPetClick(selectedPet) },
                                 modifier = Modifier
-                                    .size(24.dp)
+                                    .testTag("edit_selected_pet_top_button")
+                                    .size(38.dp)
                                     .clip(CircleShape)
-                                    .background(if (isSelected) Color.White.copy(alpha = 0.25f) else petColor),
-                                contentAlignment = Alignment.Center
+                                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), CircleShape)
                             ) {
-                                Text(
-                                    text = pet.name.take(1).uppercase(),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp,
-                                    color = Color.White
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Upraviť údaje zvieratka",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = pet.name,
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                        }
+
+                        IconButton(
+                            onClick = onAddPetClick,
+                            modifier = Modifier
+                                .testTag("add_pet_top_button")
+                                .size(38.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Pridať zvieratko",
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(20.dp)
                             )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Horizontal Scroll of Pets
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    pets.forEach { pet ->
+                        val isSelected = pet.id == selectedPet?.id
+                        val petColor = Color(pet.avatarColorHex)
+
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = if (isSelected) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0.88f)
+                            },
+                            contentColor = if (isSelected) {
+                                MaterialTheme.colorScheme.onPrimary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            },
+                            border = if (!isSelected) {
+                                androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+                            } else null,
+                            shadowElevation = if (isSelected) 3.dp else 1.dp,
+                            modifier = Modifier
+                                .testTag("pet_chip_${pet.id}")
+                                .clip(RoundedCornerShape(20.dp))
+                                .clickable { onSelectPet(pet.id) }
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .clip(CircleShape)
+                                        .background(if (isSelected) Color.White.copy(alpha = 0.25f) else petColor),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = pet.name.take(1).uppercase(),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = Color.White
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = pet.name,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                )
+                            }
                         }
                     }
                 }
@@ -185,6 +260,8 @@ fun PetHeroSummaryCard(
     pet: Pet,
     latestWeight: Double?,
     activeMedsCount: Int,
+    onEditClick: () -> Unit,
+    onDeleteClick: () -> Unit,
     onExportClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -203,7 +280,10 @@ fun PetHeroSummaryCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
                     Box(
                         modifier = Modifier
                             .size(54.dp)
@@ -250,31 +330,89 @@ fun PetHeroSummaryCard(
                     }
                 }
 
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                    modifier = Modifier
-                        .testTag("export_hero_button")
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { onExportClick() }
+                // Action buttons row (Edit, Delete, Export)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    // Edit button
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                        modifier = Modifier
+                            .testTag("edit_hero_button")
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onEditClick() }
                     ) {
-                        Icon(
-                            imageVector = Icons.Outlined.MedicalServices,
-                            contentDescription = "Export",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Export",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Upraviť",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = "Upraviť",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+
+                    // Delete button
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f),
+                        modifier = Modifier
+                            .testTag("delete_hero_button")
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onDeleteClick() }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Zmazať",
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+
+                    // Export button
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                        modifier = Modifier
+                            .testTag("export_hero_button")
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onExportClick() }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.MedicalServices,
+                                contentDescription = "Export",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = "Export",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
             }

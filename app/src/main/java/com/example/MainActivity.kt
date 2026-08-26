@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.data.local.entity.Pet
 import com.example.ui.components.AddForumPostDialog
 import com.example.ui.components.AddMedicalRecordDialog
 import com.example.ui.components.AddMedicationDialog
@@ -44,6 +45,8 @@ import com.example.ui.components.AddPetDialog
 import com.example.ui.components.AddPhotoDialog
 import com.example.ui.components.AddReminderDialog
 import com.example.ui.components.AddWeightDialog
+import com.example.ui.components.ConfirmDeletePetDialog
+import com.example.ui.components.EditPetDialog
 import com.example.ui.components.ExportVetDialog
 import com.example.ui.components.PetTopSelectorBar
 import com.example.ui.screens.CommunityForumScreen
@@ -89,8 +92,12 @@ fun MainAppContent(viewModel: PetViewModel) {
 
     // Dialog state controllers
     var showAddPetDialog by remember { mutableStateOf(false) }
+    var showEditPetDialog by remember { mutableStateOf(false) }
+    var showConfirmDeletePetDialog by remember { mutableStateOf(false) }
+    var petToEditOrDelete by remember { mutableStateOf<Pet?>(null) }
     var showAddRecordDialog by remember { mutableStateOf(false) }
     var showAddMedDialog by remember { mutableStateOf(false) }
+    var drugToAssign by remember { mutableStateOf<com.example.data.local.VeterinaryDrug?>(null) }
     var showAddWeightDialog by remember { mutableStateOf(false) }
     var showAddPhotoDialog by remember { mutableStateOf(false) }
     var showAddReminderDialog by remember { mutableStateOf(false) }
@@ -111,7 +118,11 @@ fun MainAppContent(viewModel: PetViewModel) {
                 pets = pets,
                 selectedPet = selectedPet,
                 onSelectPet = { viewModel.selectPet(it) },
-                onAddPetClick = { showAddPetDialog = true }
+                onAddPetClick = { showAddPetDialog = true },
+                onEditPetClick = { pet ->
+                    petToEditOrDelete = pet
+                    showEditPetDialog = true
+                }
             )
         },
         bottomBar = {
@@ -153,20 +164,39 @@ fun MainAppContent(viewModel: PetViewModel) {
                     onMarkDoseTaken = { viewModel.markDoseTaken(it) },
                     onToggleReminder = { viewModel.toggleReminderCompleted(it) },
                     onEmergencyClick = { currentNavIndex = 3 },
-                    onExportClick = { showExportDialog = true }
+                    onExportClick = { showExportDialog = true },
+                    onEditPetClick = { pet ->
+                        petToEditOrDelete = pet
+                        showEditPetDialog = true
+                    },
+                    onDeletePetClick = { pet ->
+                        petToEditOrDelete = pet
+                        showConfirmDeletePetDialog = true
+                    }
                 )
 
                 1 -> MedicalRecordsScreen(
                     pet = selectedPet,
                     medicalRecords = medicalRecords,
                     medications = medications,
-                    onAddRecordClick = { showAddRecordDialog = true },
-                    onAddMedicationClick = { showAddMedDialog = true },
+                    latestWeight = weightLogs.firstOrNull()?.weightKg ?: selectedPet?.targetWeightKg,
+                    onAddRecordClick = {
+                        drugToAssign = null
+                        showAddRecordDialog = true
+                    },
+                    onAddMedicationClick = {
+                        drugToAssign = null
+                        showAddMedDialog = true
+                    },
                     onDeleteRecord = { viewModel.deleteMedicalRecord(it) },
                     onDeleteMedication = { viewModel.deleteMedication(it) },
                     onMarkDoseTaken = { viewModel.markDoseTaken(it) },
                     onToggleMedActive = { viewModel.toggleMedicationActive(it) },
-                    onExportClick = { showExportDialog = true }
+                    onExportClick = { showExportDialog = true },
+                    onAssignDrugToPet = { drug ->
+                        drugToAssign = drug
+                        showAddMedDialog = true
+                    }
                 )
 
                 2 -> WeightAndGalleryScreen(
@@ -212,6 +242,33 @@ fun MainAppContent(viewModel: PetViewModel) {
         )
     }
 
+    if (showEditPetDialog && petToEditOrDelete != null) {
+        EditPetDialog(
+            pet = petToEditOrDelete!!,
+            onDismiss = { showEditPetDialog = false },
+            onConfirm = { updatedPet ->
+                viewModel.updatePet(updatedPet)
+                showEditPetDialog = false
+            },
+            onDeleteRequest = {
+                showEditPetDialog = false
+                showConfirmDeletePetDialog = true
+            }
+        )
+    }
+
+    if (showConfirmDeletePetDialog && petToEditOrDelete != null) {
+        ConfirmDeletePetDialog(
+            petName = petToEditOrDelete!!.name,
+            onDismiss = { showConfirmDeletePetDialog = false },
+            onConfirmDelete = {
+                viewModel.deletePet(petToEditOrDelete!!)
+                showConfirmDeletePetDialog = false
+                petToEditOrDelete = null
+            }
+        )
+    }
+
     if (showAddRecordDialog) {
         AddMedicalRecordDialog(
             onDismiss = { showAddRecordDialog = false },
@@ -224,12 +281,17 @@ fun MainAppContent(viewModel: PetViewModel) {
 
     if (showAddMedDialog) {
         AddMedicationDialog(
-            onDismiss = { showAddMedDialog = false },
+            initialDrug = drugToAssign,
+            onDismiss = {
+                showAddMedDialog = false
+                drugToAssign = null
+            },
             onConfirm = { name, dosage, frequency, form, startDate, endDate, totalDoses, timingNotes, prescribingVet ->
                 viewModel.addMedication(
                     name, dosage, frequency, form, startDate, endDate, totalDoses, timingNotes, prescribingVet
                 )
                 showAddMedDialog = false
+                drugToAssign = null
             }
         )
     }

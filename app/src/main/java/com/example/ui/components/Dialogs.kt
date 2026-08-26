@@ -20,7 +20,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -46,6 +49,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.example.data.local.VeterinaryDrug
+import com.example.data.local.VeterinaryDrugDatabase
 import com.example.data.local.entity.MedicalRecord
 import com.example.data.local.entity.Medication
 import com.example.data.local.entity.Pet
@@ -312,6 +317,347 @@ fun AddPetDialog(
 }
 
 @Composable
+fun EditPetDialog(
+    pet: Pet,
+    onDismiss: () -> Unit,
+    onConfirm: (Pet) -> Unit,
+    onDeleteRequest: () -> Unit
+) {
+    var name by remember { mutableStateOf(pet.name) }
+    val speciesOptions = listOf("Pes", "Mačka", "Králik", "Hlodavec", "Vták", "Iné")
+    var selectedSpecies by remember { mutableStateOf(pet.species) }
+    var breed by remember { mutableStateOf(pet.breed) }
+    var birthDate by remember { mutableStateOf(pet.birthDate) }
+    var gender by remember { mutableStateOf(pet.gender) }
+    var chip by remember { mutableStateOf(pet.chipNumber) }
+    var passport by remember { mutableStateOf(pet.passportNumber) }
+    var vetName by remember { mutableStateOf(pet.vetName) }
+    var vetClinic by remember { mutableStateOf(pet.vetClinic) }
+    var vetPhone by remember { mutableStateOf(pet.vetPhone) }
+    var vetEmail by remember { mutableStateOf(pet.vetEmail) }
+    var targetWeight by remember { mutableStateOf(if (pet.targetWeightKg > 0) pet.targetWeightKg.toString() else "") }
+
+    val colorPalette = listOf(
+        0xFF0D9488, 0xFFE07A5F, 0xFF3B82F6, 0xFF8B5CF6, 0xFF10B981, 0xFFF59E0B
+    )
+    var selectedColor by remember { mutableStateOf(pet.avatarColorHex) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(20.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Upraviť Údaje (${pet.name})",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, contentDescription = "Zavrieť")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Meno zvieratka *") },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("edit_pet_name_input")
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "Druh zvieratka:",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    speciesOptions.forEach { sp ->
+                        FilterChip(
+                            selected = selectedSpecies == sp,
+                            onClick = { selectedSpecies = sp },
+                            label = { Text(sp) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = breed,
+                    onValueChange = { breed = it },
+                    label = { Text("Plemeno (napr. Labrador, Britská mačka)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = birthDate,
+                        onValueChange = { birthDate = it },
+                        label = { Text("Dátum nar. (DD.MM.RRRR)") },
+                        modifier = Modifier.weight(1.2f)
+                    )
+                    OutlinedTextField(
+                        value = targetWeight,
+                        onValueChange = { targetWeight = it },
+                        label = { Text("Cieľ. váha (kg)") },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf("Samec", "Samica", "Samec (kastrovaný)", "Samica (kastrovaná)").forEach { g ->
+                        FilterChip(
+                            selected = gender == g,
+                            onClick = { gender = g },
+                            label = { Text(g) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "Oficiálne Identifikátory:",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedTextField(
+                    value = chip,
+                    onValueChange = { chip = it },
+                    label = { Text("Číslo mikročipu") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                OutlinedTextField(
+                    value = passport,
+                    onValueChange = { passport = it },
+                    label = { Text("Číslo Pet Pasu") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "Ošetrujúci Veterinár:",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedTextField(
+                    value = vetName,
+                    onValueChange = { vetName = it },
+                    label = { Text("Meno veterinára") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                OutlinedTextField(
+                    value = vetClinic,
+                    onValueChange = { vetClinic = it },
+                    label = { Text("Klinika / Ambulancia") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                OutlinedTextField(
+                    value = vetPhone,
+                    onValueChange = { vetPhone = it },
+                    label = { Text("Telefón veterinára") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                OutlinedTextField(
+                    value = vetEmail,
+                    onValueChange = { vetEmail = it },
+                    label = { Text("E-mail veterinára (pre export)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Farba profilu:",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    colorPalette.forEach { colorVal ->
+                        val isSelected = selectedColor == colorVal
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(Color(colorVal))
+                                .border(
+                                    width = if (isSelected) 3.dp else 0.dp,
+                                    color = if (isSelected) MaterialTheme.colorScheme.onSurface else Color.Transparent,
+                                    shape = CircleShape
+                                )
+                                .clickable { selectedColor = colorVal }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Delete Pet Action Button
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { onDeleteRequest() }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Zmazať profil",
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = "Zmazať zvieratko (${pet.name})",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Text(
+                                text = "Odstráni zviera vrátane všetkých jeho záznamov a liekov",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(onClick = onDismiss) {
+                        Text("Zrušiť")
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Button(
+                        onClick = {
+                            if (name.isNotBlank()) {
+                                onConfirm(
+                                    pet.copy(
+                                        name = name.trim(),
+                                        species = selectedSpecies,
+                                        breed = breed.trim(),
+                                        birthDate = birthDate.trim(),
+                                        gender = gender,
+                                        chipNumber = chip.trim(),
+                                        passportNumber = passport.trim(),
+                                        vetName = vetName.trim(),
+                                        vetClinic = vetClinic.trim(),
+                                        vetPhone = vetPhone.trim(),
+                                        vetEmail = vetEmail.trim(),
+                                        targetWeightKg = targetWeight.toDoubleOrNull() ?: 0.0,
+                                        avatarColorHex = selectedColor
+                                    )
+                                )
+                            }
+                        },
+                        enabled = name.isNotBlank(),
+                        modifier = Modifier.testTag("submit_edit_pet_button")
+                    ) {
+                        Text("Uložiť Zmeny")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ConfirmDeletePetDialog(
+    petName: String,
+    onDismiss: () -> Unit,
+    onConfirmDelete: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Zmazať zvieratko $petName?",
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.error
+            )
+        },
+        text = {
+            Text(
+                text = "Naozaj chcete natrvalo vymazať zvieratko $petName? Táto akcia vymaže aj všetky jeho priradené zdravotné záznamy, očkovania, predpísané lieky, váženia a pripomienky."
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirmDelete,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                modifier = Modifier.testTag("confirm_delete_pet_btn")
+            ) {
+                Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Áno, zmazať")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) {
+                Text("Zrušiť")
+            }
+        }
+    )
+}
+
+@Composable
 fun AddMedicalRecordDialog(
     onDismiss: () -> Unit,
     onConfirm: (
@@ -498,6 +844,7 @@ fun AddMedicalRecordDialog(
 
 @Composable
 fun AddMedicationDialog(
+    initialDrug: VeterinaryDrug? = null,
     onDismiss: () -> Unit,
     onConfirm: (
         name: String,
@@ -511,18 +858,26 @@ fun AddMedicationDialog(
         prescribingVet: String
     ) -> Unit
 ) {
-    var name by remember { mutableStateOf("") }
-    var dosage by remember { mutableStateOf("1 tableta") }
-    var frequency by remember { mutableStateOf("2x denne (ráno a večer)") }
-    val forms = listOf("Tabletka", "Sirup / Kvapky", "Injekcia", "Masť / Gél", "Spot-on pipeta", "Kĺbová výživa / Doplnok")
-    var selectedForm by remember { mutableStateOf(forms[0]) }
+    var name by remember { mutableStateOf(initialDrug?.name ?: "") }
+    var dosage by remember { mutableStateOf(initialDrug?.dosageGuideline ?: "1 tableta") }
+    var frequency by remember { mutableStateOf(if (initialDrug != null) "Podľa potreby / letáku" else "2x denne (ráno a večer)") }
+    val forms = listOf("Tabletka", "Žuvacia tableta", "Sirup / Kvapky", "Injekcia", "Masť / Gél", "Spot-on pipeta", "Kĺbová výživa / Doplnok")
+    var selectedForm by remember {
+        mutableStateOf(
+            if (initialDrug != null && forms.contains(initialDrug.form)) initialDrug.form else forms[0]
+        )
+    }
 
     val currentDateStr = remember { SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date()) }
     var startDate by remember { mutableStateOf(currentDateStr) }
-    var endDate by remember { mutableStateOf("Dlhodobo") }
-    var totalDoses by remember { mutableStateOf("20") }
-    var timingNotes by remember { mutableStateOf("Po kŕmení") }
+    var endDate by remember { mutableStateOf(if (initialDrug?.prescriptionRequired == true) "1 mesiac" else "Dlhodobo") }
+    var totalDoses by remember { mutableStateOf(if (initialDrug != null) "10" else "20") }
+    var timingNotes by remember { mutableStateOf(initialDrug?.administrationMethod ?: "Po kŕmení") }
     var prescribingVet by remember { mutableStateOf("") }
+
+    val quickDrugs = remember {
+        listOf("Bravecto", "NexGard", "Apoquel", "Simparica", "Milpro", "Clavaseptin", "Meloxidyl", "Vetmedin", "Surolan", "Alaptid")
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -553,13 +908,57 @@ fun AddMedicationDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Quick database suggestions
+                Text(
+                    text = "⚡ Rýchly výber z databázy:",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    quickDrugs.forEach { drugName ->
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                            modifier = Modifier
+                                .clickable {
+                                    val matchedDrug = VeterinaryDrugDatabase.drugs.firstOrNull { it.name.contains(drugName, ignoreCase = true) }
+                                    if (matchedDrug != null) {
+                                        name = matchedDrug.name
+                                        selectedForm = if (forms.contains(matchedDrug.form)) matchedDrug.form else forms[0]
+                                        dosage = matchedDrug.dosageGuideline
+                                        timingNotes = matchedDrug.administrationMethod
+                                    } else {
+                                        name = drugName
+                                    }
+                                }
+                        ) {
+                            Text(
+                                text = "+ $drugName",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
 
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
                     label = { Text("Názov lieku *") },
-                    placeholder = { Text("napr. Apoquel 16mg, Amoksiklav, Alavis") },
+                    placeholder = { Text("napr. Apoquel 16mg, Amoksiklav, Bravecto") },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()

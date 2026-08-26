@@ -48,6 +48,9 @@ interface MedicalRecordDao {
 
     @Delete
     suspend fun deleteRecord(record: MedicalRecord)
+
+    @Query("DELETE FROM medical_records WHERE petId = :petId")
+    suspend fun deleteRecordsForPet(petId: Long)
 }
 
 @Dao
@@ -66,6 +69,9 @@ interface MedicationDao {
 
     @Delete
     suspend fun deleteMedication(medication: Medication)
+
+    @Query("DELETE FROM medications WHERE petId = :petId")
+    suspend fun deleteMedicationsForPet(petId: Long)
 }
 
 @Dao
@@ -78,6 +84,9 @@ interface WeightLogDao {
 
     @Delete
     suspend fun deleteWeightLog(weightLog: WeightLog)
+
+    @Query("DELETE FROM weight_logs WHERE petId = :petId")
+    suspend fun deleteWeightLogsForPet(petId: Long)
 }
 
 @Dao
@@ -96,6 +105,9 @@ interface ReminderDao {
 
     @Delete
     suspend fun deleteReminder(reminder: Reminder)
+
+    @Query("DELETE FROM reminders WHERE petId = :petId")
+    suspend fun deleteRemindersForPet(petId: Long)
 }
 
 @Dao
@@ -108,6 +120,9 @@ interface PetPhotoDao {
 
     @Delete
     suspend fun deletePhoto(photo: PetPhoto)
+
+    @Query("DELETE FROM pet_photos WHERE petId = :petId")
+    suspend fun deletePhotosForPet(petId: Long)
 }
 
 @Dao

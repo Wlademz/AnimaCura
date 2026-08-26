@@ -18,7 +18,14 @@ class PetRepository(private val database: AppDatabase) {
     fun getPetById(id: Long): Flow<Pet?> = database.petDao().getPetById(id)
     suspend fun insertPet(pet: Pet): Long = database.petDao().insertPet(pet)
     suspend fun updatePet(pet: Pet) = database.petDao().updatePet(pet)
-    suspend fun deletePet(pet: Pet) = database.petDao().deletePet(pet)
+    suspend fun deletePet(pet: Pet) {
+        database.medicalRecordDao().deleteRecordsForPet(pet.id)
+        database.medicationDao().deleteMedicationsForPet(pet.id)
+        database.weightLogDao().deleteWeightLogsForPet(pet.id)
+        database.reminderDao().deleteRemindersForPet(pet.id)
+        database.petPhotoDao().deletePhotosForPet(pet.id)
+        database.petDao().deletePet(pet)
+    }
 
     // Medical Records
     fun getRecordsForPet(petId: Long): Flow<List<MedicalRecord>> = database.medicalRecordDao().getRecordsForPet(petId)
