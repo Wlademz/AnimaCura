@@ -106,7 +106,7 @@ fun MainAppContent(viewModel: PetViewModel) {
 
     val navItems = listOf(
         NavItem("Prehľad", Icons.Filled.Pets, Icons.Outlined.Pets, "nav_dashboard"),
-        NavItem("Zdravie & Lieky", Icons.Filled.Medication, Icons.Outlined.Medication, "nav_meds"),
+        NavItem("Zdravie", Icons.Filled.Medication, Icons.Outlined.Medication, "nav_meds"),
         NavItem("Váha & Foto", Icons.Filled.Scale, Icons.Outlined.Scale, "nav_weight"),
         NavItem("Pohotovosť", Icons.Filled.Emergency, Icons.Outlined.Emergency, "nav_emergency"),
         NavItem("Fórum", Icons.Filled.Forum, Icons.Outlined.Forum, "nav_forum")
