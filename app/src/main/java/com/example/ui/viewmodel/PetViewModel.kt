@@ -136,7 +136,10 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         vetPhone: String,
         vetEmail: String,
         targetWeight: Double,
-        colorHex: Long = 0xFF0D9488
+        colorHex: Long = 0xFF0D9488,
+        adoptedFrom: String = "",
+        adoptedBy: String = "",
+        adoptionDate: String = ""
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             val newId = repository.insertPet(
@@ -153,7 +156,10 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                     vetPhone = vetPhone,
                     vetEmail = vetEmail,
                     targetWeightKg = targetWeight,
-                    avatarColorHex = colorHex
+                    avatarColorHex = colorHex,
+                    adoptedFrom = adoptedFrom,
+                    adoptedBy = adoptedBy,
+                    adoptionDate = adoptionDate
                 )
             )
             _selectedPetId.value = newId
@@ -440,6 +446,13 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         reportBuilder.append("• Druh / Plemeno: ${pet.species} - ${pet.breed}\n")
         reportBuilder.append("• Dátum narodenia: ${pet.birthDate}\n")
         reportBuilder.append("• Pohlavie: ${pet.gender}\n")
+        if (pet.adoptedFrom.isNotBlank()) {
+            reportBuilder.append("• Pôvod / Odkiaľ adoptovaný: ${pet.adoptedFrom}\n")
+        }
+        if (pet.adoptedBy.isNotBlank()) {
+            val adoptDateSuffix = if (pet.adoptionDate.isNotBlank()) " (Dátum adopcie: ${pet.adoptionDate})" else ""
+            reportBuilder.append("• Komu adoptovaný / Osvojiteľ: ${pet.adoptedBy}$adoptDateSuffix\n")
+        }
         reportBuilder.append("• Číslo čipu: $chipStr\n")
         reportBuilder.append("• Číslo pasu: $passportStr\n")
         reportBuilder.append("• Aktuálna hmotnosť: $latestWeight kg (Cieľová: ${pet.targetWeightKg} kg)\n")

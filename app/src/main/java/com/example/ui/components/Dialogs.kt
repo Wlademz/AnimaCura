@@ -75,7 +75,10 @@ fun AddPetDialog(
         vetPhone: String,
         vetEmail: String,
         targetWeight: Double,
-        colorHex: Long
+        colorHex: Long,
+        adoptedFrom: String,
+        adoptedBy: String,
+        adoptionDate: String
     ) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
@@ -91,6 +94,9 @@ fun AddPetDialog(
     var vetPhone by remember { mutableStateOf("") }
     var vetEmail by remember { mutableStateOf("") }
     var targetWeight by remember { mutableStateOf("") }
+    var adoptedFrom by remember { mutableStateOf("") }
+    var adoptedBy by remember { mutableStateOf("") }
+    var adoptionDate by remember { mutableStateOf("") }
 
     val colorPalette = listOf(
         0xFF0D9488, 0xFFE07A5F, 0xFF3B82F6, 0xFF8B5CF6, 0xFF10B981, 0xFFF59E0B
@@ -247,6 +253,42 @@ fun AddPetDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "Pôvod & Adopcia:",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedTextField(
+                    value = adoptedFrom,
+                    onValueChange = { adoptedFrom = it },
+                    label = { Text("Odkiaľ adoptovaný / Pôvod") },
+                    placeholder = { Text("napr. Útulok Sloboda zvierat, Chovná stanica, Ulica") },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("pet_adopted_from_input")
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                OutlinedTextField(
+                    value = adoptedBy,
+                    onValueChange = { adoptedBy = it },
+                    label = { Text("Komu adoptovaný (Osvojiteľ / Majiteľ)") },
+                    placeholder = { Text("napr. Vladimír M. & rodina") },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("pet_adopted_by_input")
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                OutlinedTextField(
+                    value = adoptionDate,
+                    onValueChange = { adoptionDate = it },
+                    label = { Text("Dátum adopcie / príchodu (DD.MM.RRRR)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = "Farba profilu:",
@@ -301,7 +343,10 @@ fun AddPetDialog(
                                     vetPhone.trim(),
                                     vetEmail.trim(),
                                     targetWeight.toDoubleOrNull() ?: 0.0,
-                                    selectedColor
+                                    selectedColor,
+                                    adoptedFrom.trim(),
+                                    adoptedBy.trim(),
+                                    adoptionDate.trim()
                                 )
                             }
                         },
@@ -336,6 +381,9 @@ fun EditPetDialog(
     var vetPhone by remember { mutableStateOf(pet.vetPhone) }
     var vetEmail by remember { mutableStateOf(pet.vetEmail) }
     var targetWeight by remember { mutableStateOf(if (pet.targetWeightKg > 0) pet.targetWeightKg.toString() else "") }
+    var adoptedFrom by remember { mutableStateOf(pet.adoptedFrom) }
+    var adoptedBy by remember { mutableStateOf(pet.adoptedBy) }
+    var adoptionDate by remember { mutableStateOf(pet.adoptionDate) }
 
     val colorPalette = listOf(
         0xFF0D9488, 0xFFE07A5F, 0xFF3B82F6, 0xFF8B5CF6, 0xFF10B981, 0xFFF59E0B
@@ -509,6 +557,42 @@ fun EditPetDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "Pôvod & Adopcia:",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedTextField(
+                    value = adoptedFrom,
+                    onValueChange = { adoptedFrom = it },
+                    label = { Text("Odkiaľ adoptovaný / Pôvod") },
+                    placeholder = { Text("napr. Útulok Sloboda zvierat, Chovná stanica, Ulica") },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("edit_pet_adopted_from_input")
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                OutlinedTextField(
+                    value = adoptedBy,
+                    onValueChange = { adoptedBy = it },
+                    label = { Text("Komu adoptovaný (Osvojiteľ / Majiteľ)") },
+                    placeholder = { Text("napr. Vladimír M. & rodina") },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("edit_pet_adopted_by_input")
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                OutlinedTextField(
+                    value = adoptionDate,
+                    onValueChange = { adoptionDate = it },
+                    label = { Text("Dátum adopcie / príchodu (DD.MM.RRRR)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = "Farba profilu:",
@@ -602,7 +686,10 @@ fun EditPetDialog(
                                         vetPhone = vetPhone.trim(),
                                         vetEmail = vetEmail.trim(),
                                         targetWeightKg = targetWeight.toDoubleOrNull() ?: 0.0,
-                                        avatarColorHex = selectedColor
+                                        avatarColorHex = selectedColor,
+                                        adoptedFrom = adoptedFrom.trim(),
+                                        adoptedBy = adoptedBy.trim(),
+                                        adoptionDate = adoptionDate.trim()
                                     )
                                 )
                             }

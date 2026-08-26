@@ -38,7 +38,7 @@ import kotlinx.coroutines.launch
         ForumPost::class,
         ForumComment::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -62,6 +62,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "pet_health_database"
                 )
+                .fallbackToDestructiveMigration()
                 .addCallback(DatabaseCallback(scope))
                 .build()
                 INSTANCE = instance
@@ -108,7 +109,10 @@ abstract class AppDatabase : RoomDatabase() {
                     vetPhone = "+421 905 112 233",
                     vetEmail = "kovac@vetclinic.sk",
                     avatarColorHex = 0xFF0D9488,
-                    targetWeightKg = 31.5
+                    targetWeightKg = 31.5,
+                    adoptedFrom = "Útulok Sloboda zvierat Bratislava",
+                    adoptedBy = "Vladimír & Rodina",
+                    adoptionDate = "20.05.2021"
                 )
             )
 
@@ -127,7 +131,10 @@ abstract class AppDatabase : RoomDatabase() {
                     vetPhone = "+421 911 887 766",
                     vetEmail = "novakova@vetpoint.sk",
                     avatarColorHex = 0xFFE07A5F,
-                    targetWeightKg = 4.3
+                    targetWeightKg = 4.3,
+                    adoptedFrom = "Chovná stanica Little Whiskers",
+                    adoptedBy = "Elena K.",
+                    adoptionDate = "15.10.2022"
                 )
             )
 

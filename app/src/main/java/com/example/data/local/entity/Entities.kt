@@ -19,7 +19,10 @@ data class Pet(
     val vetPhone: String = "",
     val vetEmail: String = "",
     val avatarColorHex: Long = 0xFF0D9488,
-    val targetWeightKg: Double = 0.0
+    val targetWeightKg: Double = 0.0,
+    val adoptedFrom: String = "", // Odkiaľ bol adoptovaný / Pôvod (útulok, chovateľ, ulica...)
+    val adoptedBy: String = "",   // Komu bol adoptovaný / Osvojiteľ / Majiteľ
+    val adoptionDate: String = "" // Dátum adopcie / príchodu
 )
 
 @Entity(tableName = "medical_records")

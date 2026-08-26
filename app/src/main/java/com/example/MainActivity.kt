@@ -232,10 +232,11 @@ fun MainAppContent(viewModel: PetViewModel) {
     if (showAddPetDialog) {
         AddPetDialog(
             onDismiss = { showAddPetDialog = false },
-            onConfirm = { name, species, breed, birthDate, gender, chip, passport, vetName, vetClinic, vetPhone, vetEmail, targetWeight, colorHex ->
+            onConfirm = { name, species, breed, birthDate, gender, chip, passport, vetName, vetClinic, vetPhone, vetEmail, targetWeight, colorHex, adoptedFrom, adoptedBy, adoptionDate ->
                 viewModel.addPet(
                     name, species, breed, birthDate, gender, chip, passport,
-                    vetName, vetClinic, vetPhone, vetEmail, targetWeight, colorHex
+                    vetName, vetClinic, vetPhone, vetEmail, targetWeight, colorHex,
+                    adoptedFrom, adoptedBy, adoptionDate
                 )
                 showAddPetDialog = false
             }

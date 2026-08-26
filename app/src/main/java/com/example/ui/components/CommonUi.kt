@@ -31,8 +31,10 @@ import androidx.compose.material.icons.filled.Male
 import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.Vaccines
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.MedicalServices
 import androidx.compose.material.icons.outlined.NotificationsActive
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Scale
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
@@ -82,23 +84,23 @@ fun PetTopSelectorBar(
         modifier = modifier.fillMaxWidth()
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
-            // Full background banner image with Horse, Dog and Cat line art
+            // Full width panoramic banner image with Horse, Dog, Cat and Rabbit silhouettes
             Image(
-                painter = painterResource(id = R.drawable.pet_vet_header_banner_1787724938076),
-                contentDescription = "Pozadie s koňom, psíkom a mačičkou",
+                painter = painterResource(id = R.drawable.pet_banner_panoramic_clean_1787729777947),
+                contentDescription = "Panoramatické zvieratká",
                 modifier = Modifier.matchParentSize(),
                 contentScale = ContentScale.Crop
             )
 
-            // Translucent overlay for optimal contrast and readability
+            // Translucent overlay for clean contrast and readability
             Box(
                 modifier = Modifier
                     .matchParentSize()
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                MaterialTheme.colorScheme.surface.copy(alpha = 0.80f),
-                                MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0.65f),
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0.88f)
                             )
                         )
                     )
@@ -432,6 +434,87 @@ fun PetHeroSummaryCard(
                     value = pet.birthDate.ifBlank { "Neuvedené" },
                     modifier = Modifier.weight(1.15f)
                 )
+            }
+
+            // Adoption / Origin details banner
+            if (pet.adoptedFrom.isNotBlank() || pet.adoptedBy.isNotBlank()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.88f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Home,
+                                contentDescription = "Adopcia a pôvod",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            if (pet.adoptedFrom.isNotBlank()) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = "Pôvod (odkiaľ): ",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = pet.adoptedFrom,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                            if (pet.adoptedBy.isNotBlank()) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = "Adoptoval (komu): ",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    val adoptInfo = if (pet.adoptionDate.isNotBlank()) {
+                                        "${pet.adoptedBy} (${pet.adoptionDate})"
+                                    } else {
+                                        pet.adoptedBy
+                                    }
+                                    Text(
+                                        text = adoptInfo,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
