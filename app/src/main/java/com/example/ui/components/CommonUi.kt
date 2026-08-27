@@ -79,6 +79,7 @@ fun PetTopSelectorBar(
     onAddPetClick: () -> Unit,
     onEditPetClick: ((Pet) -> Unit)? = null,
     onInfoClick: (() -> Unit)? = null,
+    onChangePhotoClick: ((Pet) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -122,20 +123,34 @@ fun PetTopSelectorBar(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.weight(1f).padding(end = 8.dp)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(38.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Pets,
-                                contentDescription = "Pet Logo",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
+                        if (selectedPet != null) {
+                            PetAvatar(
+                                pet = selectedPet,
+                                size = 42.dp,
+                                showCameraBadge = true,
+                                onClick = if (onChangePhotoClick != null) {
+                                    { onChangePhotoClick(selectedPet) }
+                                } else if (onEditPetClick != null) {
+                                    { onEditPetClick(selectedPet) }
+                                } else null,
+                                modifier = Modifier.testTag("top_bar_pet_avatar")
                             )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Pets,
+                                    contentDescription = "Pet Logo",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         Column(modifier = Modifier.weight(1f, fill = false)) {
@@ -256,20 +271,10 @@ fun PetTopSelectorBar(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(24.dp)
-                                        .clip(CircleShape)
-                                        .background(if (isSelected) Color.White.copy(alpha = 0.25f) else petColor),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = pet.name.take(1).uppercase(),
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 12.sp,
-                                        color = Color.White
-                                    )
-                                }
+                                PetAvatar(
+                                    pet = pet,
+                                    size = 24.dp
+                                )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = pet.name,
@@ -293,6 +298,7 @@ fun PetHeroSummaryCard(
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onExportClick: () -> Unit,
+    onChangePhotoClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     ElevatedCard(
@@ -317,20 +323,13 @@ fun PetHeroSummaryCard(
                         .weight(1f)
                         .padding(end = 6.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(50.dp)
-                            .clip(CircleShape)
-                            .background(Color(pet.avatarColorHex)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = pet.name.take(1).uppercase(),
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    }
+                    PetAvatar(
+                        pet = pet,
+                        size = 54.dp,
+                        showCameraBadge = true,
+                        onClick = onChangePhotoClick ?: onEditClick,
+                        modifier = Modifier.testTag("hero_pet_avatar")
+                    )
                     Spacer(modifier = Modifier.width(10.dp))
                     Column(modifier = Modifier.weight(1f, fill = false)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {

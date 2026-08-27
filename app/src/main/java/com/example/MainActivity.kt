@@ -52,6 +52,7 @@ import com.example.ui.components.EditPetDialog
 import com.example.ui.components.EnterLicenseKeyDialog
 import com.example.ui.components.ExportVetDialog
 import com.example.ui.components.LicenseExpiredLockScreen
+import com.example.ui.components.PetPhotoPickerDialog
 import com.example.ui.components.PetTopSelectorBar
 import com.example.ui.screens.CommunityForumScreen
 import com.example.ui.screens.DashboardScreen
@@ -120,6 +121,8 @@ fun MainAppContent(viewModel: PetViewModel) {
     var showAddForumPostDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     var showEnterKeyDialog by remember { mutableStateOf(false) }
+    var petForPhotoChange by remember { mutableStateOf<Pet?>(null) }
+    var showPetPhotoDialog by remember { mutableStateOf(false) }
 
     val navItems = listOf(
         NavItem("Prehľad", Icons.Filled.Pets, Icons.Outlined.Pets, "nav_dashboard"),
@@ -140,7 +143,11 @@ fun MainAppContent(viewModel: PetViewModel) {
                     petToEditOrDelete = pet
                     showEditPetDialog = true
                 },
-                onInfoClick = { showAboutDialog = true }
+                onInfoClick = { showAboutDialog = true },
+                onChangePhotoClick = { pet ->
+                    petForPhotoChange = pet
+                    showPetPhotoDialog = true
+                }
             )
         },
         bottomBar = {
@@ -190,6 +197,10 @@ fun MainAppContent(viewModel: PetViewModel) {
                     onDeletePetClick = { pet ->
                         petToEditOrDelete = pet
                         showConfirmDeletePetDialog = true
+                    },
+                    onChangePhotoClick = { pet ->
+                        petForPhotoChange = pet
+                        showPetPhotoDialog = true
                     }
                 )
 
@@ -250,13 +261,34 @@ fun MainAppContent(viewModel: PetViewModel) {
     if (showAddPetDialog) {
         AddPetDialog(
             onDismiss = { showAddPetDialog = false },
-            onConfirm = { name, species, breed, birthDate, gender, chip, passport, vetName, vetClinic, vetPhone, vetEmail, targetWeight, colorHex, adoptedFrom, adoptedBy, adoptionDate ->
+            onConfirm = { name, species, breed, birthDate, gender, chip, passport, vetName, vetClinic, vetPhone, vetEmail, targetWeight, colorHex, adoptedFrom, adoptedBy, adoptionDate, imageUri ->
                 viewModel.addPet(
                     name, species, breed, birthDate, gender, chip, passport,
                     vetName, vetClinic, vetPhone, vetEmail, targetWeight, colorHex,
-                    adoptedFrom, adoptedBy, adoptionDate
+                    adoptedFrom, adoptedBy, adoptionDate, imageUri
                 )
                 showAddPetDialog = false
+            }
+        )
+    }
+
+    if (showPetPhotoDialog && petForPhotoChange != null) {
+        PetPhotoPickerDialog(
+            petName = petForPhotoChange!!.name,
+            currentImageUri = petForPhotoChange!!.imageUri,
+            onDismiss = {
+                showPetPhotoDialog = false
+                petForPhotoChange = null
+            },
+            onPhotoSelected = { newPath ->
+                viewModel.updatePetPhoto(petForPhotoChange!!, newPath)
+                showPetPhotoDialog = false
+                petForPhotoChange = null
+            },
+            onPhotoRemoved = {
+                viewModel.updatePetPhoto(petForPhotoChange!!, "")
+                showPetPhotoDialog = false
+                petForPhotoChange = null
             }
         )
     }

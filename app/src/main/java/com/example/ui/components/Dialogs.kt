@@ -80,7 +80,8 @@ fun AddPetDialog(
         colorHex: Long,
         adoptedFrom: String,
         adoptedBy: String,
-        adoptionDate: String
+        adoptionDate: String,
+        imageUri: String
     ) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
@@ -99,11 +100,29 @@ fun AddPetDialog(
     var adoptedFrom by remember { mutableStateOf("") }
     var adoptedBy by remember { mutableStateOf("") }
     var adoptionDate by remember { mutableStateOf("") }
+    var imageUri by remember { mutableStateOf("") }
+    var showPhotoPicker by remember { mutableStateOf(false) }
 
     val colorPalette = listOf(
         0xFF0D9488, 0xFFE07A5F, 0xFF3B82F6, 0xFF8B5CF6, 0xFF10B981, 0xFFF59E0B
     )
     var selectedColor by remember { mutableStateOf(colorPalette[0]) }
+
+    if (showPhotoPicker) {
+        PetPhotoPickerDialog(
+            petName = name.ifBlank { "Zvieratko" },
+            currentImageUri = imageUri,
+            onDismiss = { showPhotoPicker = false },
+            onPhotoSelected = { newPath ->
+                imageUri = newPath
+                showPhotoPicker = false
+            },
+            onPhotoRemoved = {
+                imageUri = ""
+                showPhotoPicker = false
+            }
+        )
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -134,7 +153,38 @@ fun AddPetDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Avatar / Photo Capture Preview
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    PetAvatar(
+                        pet = Pet(
+                            name = name.ifBlank { "Z" },
+                            species = selectedSpecies,
+                            breed = breed,
+                            birthDate = birthDate,
+                            gender = gender,
+                            avatarColorHex = selectedColor,
+                            imageUri = imageUri
+                        ),
+                        size = 76.dp,
+                        showCameraBadge = true,
+                        onClick = { showPhotoPicker = true },
+                        modifier = Modifier.testTag("add_pet_avatar_picker_button")
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = if (imageUri.isNotBlank()) "Fotka zvolená (ťuknite pre zmenu)" else "Ťuknite sem pre odfotenie / fotku",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
 
                 OutlinedTextField(
                     value = name,
@@ -348,7 +398,8 @@ fun AddPetDialog(
                                     selectedColor,
                                     adoptedFrom.trim(),
                                     adoptedBy.trim(),
-                                    adoptionDate.trim()
+                                    adoptionDate.trim(),
+                                    imageUri.trim()
                                 )
                             }
                         },
@@ -386,11 +437,29 @@ fun EditPetDialog(
     var adoptedFrom by remember { mutableStateOf(pet.adoptedFrom) }
     var adoptedBy by remember { mutableStateOf(pet.adoptedBy) }
     var adoptionDate by remember { mutableStateOf(pet.adoptionDate) }
+    var imageUri by remember { mutableStateOf(pet.imageUri) }
+    var showPhotoPicker by remember { mutableStateOf(false) }
 
     val colorPalette = listOf(
         0xFF0D9488, 0xFFE07A5F, 0xFF3B82F6, 0xFF8B5CF6, 0xFF10B981, 0xFFF59E0B
     )
     var selectedColor by remember { mutableStateOf(pet.avatarColorHex) }
+
+    if (showPhotoPicker) {
+        PetPhotoPickerDialog(
+            petName = name.ifBlank { pet.name },
+            currentImageUri = imageUri,
+            onDismiss = { showPhotoPicker = false },
+            onPhotoSelected = { newPath ->
+                imageUri = newPath
+                showPhotoPicker = false
+            },
+            onPhotoRemoved = {
+                imageUri = ""
+                showPhotoPicker = false
+            }
+        )
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -430,7 +499,35 @@ fun EditPetDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Avatar / Photo Capture Preview
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    PetAvatar(
+                        pet = pet.copy(
+                            name = name.ifBlank { pet.name },
+                            species = selectedSpecies,
+                            avatarColorHex = selectedColor,
+                            imageUri = imageUri
+                        ),
+                        size = 76.dp,
+                        showCameraBadge = true,
+                        onClick = { showPhotoPicker = true },
+                        modifier = Modifier.testTag("edit_pet_avatar_picker_button")
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = if (imageUri.isNotBlank()) "Fotka zvieratka (ťuknite pre odfotenie / zmenu)" else "Ťuknite sem pre odfotenie zvieratka",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
 
                 OutlinedTextField(
                     value = name,
@@ -691,7 +788,8 @@ fun EditPetDialog(
                                         avatarColorHex = selectedColor,
                                         adoptedFrom = adoptedFrom.trim(),
                                         adoptedBy = adoptedBy.trim(),
-                                        adoptionDate = adoptionDate.trim()
+                                        adoptionDate = adoptionDate.trim(),
+                                        imageUri = imageUri.trim()
                                     )
                                 )
                             }

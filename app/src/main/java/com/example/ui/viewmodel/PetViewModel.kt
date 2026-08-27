@@ -139,7 +139,8 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         colorHex: Long = 0xFF0D9488,
         adoptedFrom: String = "",
         adoptedBy: String = "",
-        adoptionDate: String = ""
+        adoptionDate: String = "",
+        imageUri: String = ""
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             val newId = repository.insertPet(
@@ -159,10 +160,17 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                     avatarColorHex = colorHex,
                     adoptedFrom = adoptedFrom,
                     adoptedBy = adoptedBy,
-                    adoptionDate = adoptionDate
+                    adoptionDate = adoptionDate,
+                    imageUri = imageUri
                 )
             )
             _selectedPetId.value = newId
+        }
+    }
+
+    fun updatePetPhoto(pet: Pet, imageUri: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.updatePet(pet.copy(imageUri = imageUri))
         }
     }
 

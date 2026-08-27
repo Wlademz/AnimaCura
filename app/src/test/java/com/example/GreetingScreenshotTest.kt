@@ -46,6 +46,8 @@ class GreetingScreenshotTest {
           pet = samplePet,
           latestWeight = 31.4,
           activeMedsCount = 2,
+          onEditClick = {},
+          onDeleteClick = {},
           onExportClick = {}
         )
       }

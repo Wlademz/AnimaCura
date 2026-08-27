@@ -22,7 +22,8 @@ data class Pet(
     val targetWeightKg: Double = 0.0,
     val adoptedFrom: String = "", // Odkiaľ bol adoptovaný / Pôvod (útulok, chovateľ, ulica...)
     val adoptedBy: String = "",   // Komu bol adoptovaný / Osvojiteľ / Majiteľ
-    val adoptionDate: String = "" // Dátum adopcie / príchodu
+    val adoptionDate: String = "", // Dátum adopcie / príchodu
+    val imageUri: String = ""     // Fotografia zvieratka (cesta k súboru / URI)
 )
 
 @Entity(tableName = "medical_records")

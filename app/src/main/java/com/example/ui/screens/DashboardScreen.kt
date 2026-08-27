@@ -80,6 +80,7 @@ fun DashboardScreen(
     onExportClick: () -> Unit,
     onEditPetClick: (Pet) -> Unit = {},
     onDeletePetClick: (Pet) -> Unit = {},
+    onChangePhotoClick: ((Pet) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val activeMeds = medications.filter { it.isActive }
@@ -99,7 +100,8 @@ fun DashboardScreen(
                 activeMedsCount = activeMeds.size,
                 onEditClick = { onEditPetClick(pet) },
                 onDeleteClick = { onDeletePetClick(pet) },
-                onExportClick = onExportClick
+                onExportClick = onExportClick,
+                onChangePhotoClick = if (onChangePhotoClick != null) { { onChangePhotoClick(pet) } } else null
             )
         } else {
             Card(
