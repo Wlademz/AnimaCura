@@ -286,6 +286,31 @@ fun DashboardScreen(
                 targetWeight = pet.targetWeightKg
             )
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Decent author footer
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "PetMed Zdravotný Denník",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "Vytvoril: Wlademz Mlck & Wiki Pup • vladoacidoza@gmail.com",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
     }
 }
 

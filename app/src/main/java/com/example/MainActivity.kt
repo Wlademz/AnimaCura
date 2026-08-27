@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.local.entity.Pet
+import com.example.ui.components.AboutAppDialog
 import com.example.ui.components.AddForumPostDialog
 import com.example.ui.components.AddMedicalRecordDialog
 import com.example.ui.components.AddMedicationDialog
@@ -103,11 +104,12 @@ fun MainAppContent(viewModel: PetViewModel) {
     var showAddReminderDialog by remember { mutableStateOf(false) }
     var showExportDialog by remember { mutableStateOf(false) }
     var showAddForumPostDialog by remember { mutableStateOf(false) }
+    var showAboutDialog by remember { mutableStateOf(false) }
 
     val navItems = listOf(
         NavItem("Prehľad", Icons.Filled.Pets, Icons.Outlined.Pets, "nav_dashboard"),
         NavItem("Zdravie", Icons.Filled.Medication, Icons.Outlined.Medication, "nav_meds"),
-        NavItem("Váha & Foto", Icons.Filled.Scale, Icons.Outlined.Scale, "nav_weight"),
+        NavItem("Váha", Icons.Filled.Scale, Icons.Outlined.Scale, "nav_weight"),
         NavItem("Pohotovosť", Icons.Filled.Emergency, Icons.Outlined.Emergency, "nav_emergency"),
         NavItem("Fórum", Icons.Filled.Forum, Icons.Outlined.Forum, "nav_forum")
     )
@@ -122,7 +124,8 @@ fun MainAppContent(viewModel: PetViewModel) {
                 onEditPetClick = { pet ->
                     petToEditOrDelete = pet
                     showEditPetDialog = true
-                }
+                },
+                onInfoClick = { showAboutDialog = true }
             )
         },
         bottomBar = {
@@ -347,6 +350,12 @@ fun MainAppContent(viewModel: PetViewModel) {
                 viewModel.addForumPost(title, content, author, tag)
                 showAddForumPostDialog = false
             }
+        )
+    }
+
+    if (showAboutDialog) {
+        AboutAppDialog(
+            onDismiss = { showAboutDialog = false }
         )
     }
 }

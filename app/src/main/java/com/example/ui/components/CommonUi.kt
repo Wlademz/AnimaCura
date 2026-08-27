@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.Vaccines
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.MedicalServices
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.Person
@@ -77,6 +78,7 @@ fun PetTopSelectorBar(
     onSelectPet: (Long) -> Unit,
     onAddPetClick: () -> Unit,
     onEditPetClick: ((Pet) -> Unit)? = null,
+    onInfoClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -160,6 +162,25 @@ fun PetTopSelectorBar(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
+                        if (onInfoClick != null) {
+                            IconButton(
+                                onClick = onInfoClick,
+                                modifier = Modifier
+                                    .testTag("app_info_top_button")
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), CircleShape)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Info,
+                                    contentDescription = "O aplikácii a autor",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+
                         if (selectedPet != null && onEditPetClick != null) {
                             IconButton(
                                 onClick = { onEditPetClick(selectedPet) },

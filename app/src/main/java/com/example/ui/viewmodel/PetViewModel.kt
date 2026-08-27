@@ -501,6 +501,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
 
         reportBuilder.append("\n-----------------------------------------\n")
         reportBuilder.append("Vygenerované aplikáciou PetMed Zdravotný Denník\n")
+        reportBuilder.append("Vytvoril: Wlademz Mlck & Wiki Pup (vladoacidoza@gmail.com)\n")
 
         val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
             data = Uri.parse("mailto:")
