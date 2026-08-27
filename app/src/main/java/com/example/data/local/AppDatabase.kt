@@ -194,6 +194,32 @@ abstract class AppDatabase : RoomDatabase() {
             medicalDao.insertRecord(
                 MedicalRecord(
                     petId = pet1Id,
+                    type = "Operácia / Zákrok",
+                    title = "Kastrácia & preventívne čistenie zubov",
+                    date = "15.06.2022",
+                    vetClinic = "Klinika Bennett Bratislava",
+                    diagnosis = "Elektívny chirurgický zákrok bez komplikácií. Inhalačná anestézia, resorbovateľný šijací materiál.",
+                    costEur = 185.0,
+                    notes = "Pooperačný priebeh bez opuchu, pacient toleroval golier.",
+                    nextDueDate = ""
+                )
+            )
+            medicalDao.insertRecord(
+                MedicalRecord(
+                    petId = pet1Id,
+                    type = "Rozbor moču",
+                    title = "Preventívny rozbor moču a sedimentu",
+                    date = "18.06.2024",
+                    vetClinic = "Klinika Bennett Bratislava",
+                    diagnosis = "Špecifická hmotnosť SG 1.030, pH 6.5, bielkoviny neg., glukóza neg., sediment bez kryštálov.",
+                    costEur = 22.0,
+                    notes = "Všetky parametre v norme, kontrola opäť pri preventívke.",
+                    nextDueDate = "18.06.2025"
+                )
+            )
+            medicalDao.insertRecord(
+                MedicalRecord(
+                    petId = pet1Id,
                     type = "Odčervenie",
                     title = "Milprazon 12.5 mg/125 mg tablety",
                     date = "01.07.2024",
@@ -216,6 +242,32 @@ abstract class AppDatabase : RoomDatabase() {
                     costEur = 38.0,
                     notes = "Výborne znášané.",
                     nextDueDate = "14.02.2025"
+                )
+            )
+            medicalDao.insertRecord(
+                MedicalRecord(
+                    petId = pet2Id,
+                    type = "Operácia / Zákrok",
+                    title = "Kastrácia / Laparoskopická sterilizácia",
+                    date = "15.03.2023",
+                    vetClinic = "VetPoint Klinika",
+                    diagnosis = "Šetrný laparoskopický zákrok. Rana bez reakcie, zhojená do 7 dní.",
+                    costEur = 130.0,
+                    notes = "Rekonvalescencia bez komplikácií.",
+                    nextDueDate = ""
+                )
+            )
+            medicalDao.insertRecord(
+                MedicalRecord(
+                    petId = pet2Id,
+                    type = "Rozbor moču",
+                    title = "Vyšetrenie moču na struvity a hustotu",
+                    date = "10.01.2024",
+                    vetClinic = "VetPoint Klinika",
+                    diagnosis = "pH 6.8, prítomné drobné kryštáliky struvitov, mierne znížený príjem tekutín.",
+                    costEur = 20.0,
+                    notes = "Doporučené podávať vlhké krmivo a fontánku na pitie.",
+                    nextDueDate = "10.07.2024"
                 )
             )
             medicalDao.insertRecord(

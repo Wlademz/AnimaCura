@@ -70,13 +70,13 @@ fun DashboardScreen(
     medicalRecords: List<MedicalRecord>,
     weightLogs: List<WeightLog>,
     reminders: List<Reminder>,
-    onAddRecordClick: () -> Unit,
-    onAddMedClick: () -> Unit,
-    onAddWeightClick: () -> Unit,
-    onAddReminderClick: () -> Unit,
+    onAddRecordClick: () -> Unit = {},
+    onAddMedClick: () -> Unit = {},
+    onAddWeightClick: () -> Unit = {},
+    onAddReminderClick: () -> Unit = {},
     onMarkDoseTaken: (Medication) -> Unit,
     onToggleReminder: (Reminder) -> Unit,
-    onEmergencyClick: () -> Unit,
+    onEmergencyClick: () -> Unit = {},
     onExportClick: () -> Unit,
     onEditPetClick: (Pet) -> Unit = {},
     onDeletePetClick: (Pet) -> Unit = {},
@@ -124,56 +124,6 @@ fun DashboardScreen(
                     )
                 }
             }
-        }
-
-        // Quick Actions Grid
-        Text(
-            text = "Rýchle akcie",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            QuickActionButton(
-                title = "+ Vyšetrenie",
-                icon = Icons.Default.LocalHospital,
-                iconColor = MedicalGreen,
-                bgColor = MedicalGreen.copy(alpha = 0.12f),
-                onClick = onAddRecordClick,
-                modifier = Modifier.weight(1f),
-                testTag = "quick_add_record"
-            )
-            QuickActionButton(
-                title = "+ Liek",
-                icon = Icons.Default.Medication,
-                iconColor = PillPurple,
-                bgColor = PillPurple.copy(alpha = 0.12f),
-                onClick = onAddMedClick,
-                modifier = Modifier.weight(1f),
-                testTag = "quick_add_med"
-            )
-            QuickActionButton(
-                title = "+ Váha",
-                icon = Icons.Outlined.Scale,
-                iconColor = MaterialTheme.colorScheme.primary,
-                bgColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                onClick = onAddWeightClick,
-                modifier = Modifier.weight(1f),
-                testTag = "quick_add_weight"
-            )
-            QuickActionButton(
-                title = "Pohotovosť",
-                icon = Icons.Default.Emergency,
-                iconColor = EmergencyRed,
-                bgColor = EmergencyRed.copy(alpha = 0.12f),
-                onClick = onEmergencyClick,
-                modifier = Modifier.weight(1f),
-                testTag = "quick_emergency"
-            )
         }
 
         // Today's Medication Dosage Section
@@ -334,48 +284,6 @@ fun DashboardScreen(
             WeightSplineChart(
                 weightLogs = weightLogs,
                 targetWeight = pet.targetWeightKg
-            )
-        }
-    }
-}
-
-@Composable
-fun QuickActionButton(
-    title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    iconColor: Color,
-    bgColor: Color,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    testTag: String = ""
-) {
-    Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = bgColor,
-        modifier = modifier
-            .testTag(testTag)
-            .clip(RoundedCornerShape(14.dp))
-            .clickable { onClick() }
-    ) {
-        Column(
-            modifier = Modifier.padding(vertical = 12.dp, horizontal = 6.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                tint = iconColor,
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelSmall,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
         }
     }

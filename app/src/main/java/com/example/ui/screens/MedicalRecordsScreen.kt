@@ -85,7 +85,7 @@ fun MedicalRecordsScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabTitles = listOf("Vyšetrenia", "Moje Lieky", "Databáza Liekov", "Export")
 
-    val categories = listOf("Všetky", "Očkovanie", "Vyšetrenie", "Krvné testy", "RTG / Sono", "Odčervenie", "Zuby")
+    val categories = listOf("Všetky", "Očkovanie", "Vyšetrenie", "Operácie", "Rozbor moču", "Krvné testy", "RTG / Sono", "Odčervenie", "Zuby")
     var selectedCategoryFilter by remember { mutableStateOf("Všetky") }
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -157,7 +157,13 @@ fun MedicalRecordsScreen(
                     val filteredRecords = if (selectedCategoryFilter == "Všetky") {
                         medicalRecords
                     } else {
-                        medicalRecords.filter { it.type.contains(selectedCategoryFilter, ignoreCase = true) }
+                        medicalRecords.filter { record ->
+                            when (selectedCategoryFilter) {
+                                "Operácie" -> record.type.contains("Operácia", ignoreCase = true) || record.type.contains("Zákrok", ignoreCase = true)
+                                "Rozbor moču" -> record.type.contains("moč", ignoreCase = true)
+                                else -> record.type.contains(selectedCategoryFilter, ignoreCase = true)
+                            }
+                        }
                     }
 
                     if (filteredRecords.isEmpty()) {
@@ -405,6 +411,9 @@ fun MedicalRecordCard(
         record.type.contains("Krvné") -> Color(0xFFDC2626)
         record.type.contains("RTG") || record.type.contains("Sono") -> Color(0xFF7C3AED)
         record.type.contains("Odčervenie") -> MedicalGreen
+        record.type.contains("Operácia") || record.type.contains("Zákrok") -> Color(0xFFE11D48)
+        record.type.contains("moč", ignoreCase = true) -> Color(0xFFD97706)
+        record.type.contains("Zuby") -> Color(0xFF0284C7)
         else -> MaterialTheme.colorScheme.primary
     }
 

@@ -761,9 +761,10 @@ fun AddMedicalRecordDialog(
     val types = listOf(
         "Očkovanie",
         "Vyšetrenie",
+        "Operácia / Zákrok",
+        "Rozbor moču",
         "Krvné testy",
         "RTG / Sono",
-        "Operácia / Zákrok",
         "Odčervenie",
         "Zuby",
         "Alergia / Diagnóza",
@@ -778,6 +779,24 @@ fun AddMedicalRecordDialog(
     var cost by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
     var nextDueDate by remember { mutableStateOf("") }
+
+    val titlePlaceholder = when (selectedType) {
+        "Operácia / Zákrok" -> "napr. Kastrácia, Šitie rany, Odstránenie cysty"
+        "Rozbor moču" -> "napr. Preventívny rozbor moču, Sediment & pH, Test na struvity"
+        "Očkovanie" -> "napr. Nobivac DHPPi + L4, Purevax RCP, Besnota"
+        "Krvné testy" -> "napr. Biochemický a hematologický profil"
+        "RTG / Sono" -> "napr. Sono brušnej dutiny, RTG kĺbov"
+        "Odčervenie" -> "napr. Milprazon, Drontal"
+        "Zuby" -> "napr. Ultrazvukové čistenie zubného kameňa"
+        else -> "napr. Vstupné vyšetrenie, Kontrola uší"
+    }
+
+    val diagnosisPlaceholder = when (selectedType) {
+        "Operácia / Zákrok" -> "napr. Anestézia bez komplikácií, stehy vybrať o 10-12 dní, pooperačný oblek/golier"
+        "Rozbor moču" -> "napr. Špecifická hustota SG 1.030, pH 6.5, leukocyty negat., bez prítomnosti kryštálov"
+        "Krvné testy" -> "napr. Pečeňové a obličkové parametre v norme, ALT 85 U/L"
+        else -> "napr. Nález lekára, stav a odporúčaná terapia"
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -835,7 +854,7 @@ fun AddMedicalRecordDialog(
                     value = title,
                     onValueChange = { title = it },
                     label = { Text("Názov úkonu / Vakcíny *") },
-                    placeholder = { Text("napr. Nobivac DHPPi + L4, Kontrola uší") },
+                    placeholder = { Text(titlePlaceholder) },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -872,6 +891,7 @@ fun AddMedicalRecordDialog(
                     value = diagnosis,
                     onValueChange = { diagnosis = it },
                     label = { Text("Diagnóza / Výsledok vyšetrenia") },
+                    placeholder = { Text(diagnosisPlaceholder) },
                     minLines = 2,
                     modifier = Modifier.fillMaxWidth()
                 )
