@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.data.local.LicenseManager
 import com.example.data.local.entity.Pet
 import com.example.ui.components.AboutAppDialog
 import com.example.ui.components.AddForumPostDialog
@@ -48,7 +49,9 @@ import com.example.ui.components.AddReminderDialog
 import com.example.ui.components.AddWeightDialog
 import com.example.ui.components.ConfirmDeletePetDialog
 import com.example.ui.components.EditPetDialog
+import com.example.ui.components.EnterLicenseKeyDialog
 import com.example.ui.components.ExportVetDialog
+import com.example.ui.components.LicenseExpiredLockScreen
 import com.example.ui.components.PetTopSelectorBar
 import com.example.ui.screens.CommunityForumScreen
 import com.example.ui.screens.DashboardScreen
@@ -76,6 +79,17 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainAppContent(viewModel: PetViewModel) {
     val context = LocalContext.current
+    var licenseRefreshCounter by remember { mutableIntStateOf(0) }
+    val licenseStatus = remember(licenseRefreshCounter) { LicenseManager.getLicenseStatus(context) }
+
+    // If 30-day trial is expired and application is not activated with a valid key, lock the app
+    if (licenseStatus.isExpired && !licenseStatus.isActivated) {
+        LicenseExpiredLockScreen(
+            licenseStatus = licenseStatus,
+            onActivated = { licenseRefreshCounter++ }
+        )
+        return
+    }
 
     val pets by viewModel.allPets.collectAsStateWithLifecycle()
     val selectedPet by viewModel.selectedPet.collectAsStateWithLifecycle()
@@ -105,6 +119,7 @@ fun MainAppContent(viewModel: PetViewModel) {
     var showExportDialog by remember { mutableStateOf(false) }
     var showAddForumPostDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
+    var showEnterKeyDialog by remember { mutableStateOf(false) }
 
     val navItems = listOf(
         NavItem("Prehľad", Icons.Filled.Pets, Icons.Outlined.Pets, "nav_dashboard"),
@@ -355,7 +370,16 @@ fun MainAppContent(viewModel: PetViewModel) {
 
     if (showAboutDialog) {
         AboutAppDialog(
-            onDismiss = { showAboutDialog = false }
+            onDismiss = { showAboutDialog = false },
+            onEnterKeyClick = { showEnterKeyDialog = true }
+        )
+    }
+
+    if (showEnterKeyDialog) {
+        EnterLicenseKeyDialog(
+            licenseStatus = licenseStatus,
+            onDismiss = { showEnterKeyDialog = false },
+            onActivated = { licenseRefreshCounter++ }
         )
     }
 }

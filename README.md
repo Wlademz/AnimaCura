@@ -38,3 +38,18 @@ Okamžité generovanie súhrnnej správy pre veterinára cez e-mail a zoznam 24/
 
 
 Vyrobené z lásky pre zvieratá ! :) @Wlademz
+
+---
+
+### 🔑 Licenčný systém a 30-dňová skúšobná lehota (Trial):
+- **30-dňová trial doba**: Počítaná automaticky od prvého spustenia na zariadení.
+- **Po 30 dňoch**: Aplikácia sa uzamkne a zobrazí obrazovku s ID zariadenia (napr. `PET-XXXX-YYYY`) a možnosťou zadať kľúč, kontaktovať autora na `vladoacidoza@gmail.com` alebo aplikáciu odinštalovať.
+- **Univerzálne Master kľúče (pre autora)**:
+  - `PETMED-VIP-2026`
+  - `WLADEMZ-WIKI-2026`
+  - `PETMED-PRO-LIFETIME`
+  - `ACIDOZA-PET-VIP`
+  - `WIKI-PUP-PREMIUM`
+- **Generované kľúče pre konkrétne zariadenie zákazníka**:
+  - Pre zariadenie napr. `PET-9A4B-3C21` funguje aj formát: `WLAD-9A4B-3C21` (alebo kryptografický hash kľúč `KEY-...`).
+

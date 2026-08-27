@@ -1650,9 +1650,11 @@ fun AddForumPostDialog(
 
 @Composable
 fun AboutAppDialog(
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onEnterKeyClick: (() -> Unit)? = null
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val licenseStatus = remember { com.example.data.local.LicenseManager.getLicenseStatus(context) }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -1709,7 +1711,88 @@ fun AboutAppDialog(
                     lineHeight = 18.sp
                 )
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // License status card
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = if (licenseStatus.isActivated) {
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                    } else {
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        horizontalAlignment = Alignment.Start
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Licencia & Stav",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            if (licenseStatus.isActivated) {
+                                Text(
+                                    text = "✓ Plná VIP verzia",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            } else {
+                                Text(
+                                    text = "Skúšobná (${licenseStatus.daysRemaining} dní)",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.secondary
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = if (licenseStatus.isActivated) {
+                                "Aplikácia je plne aktivovaná trvalým licenčným kľúčom."
+                            } else {
+                                "30-dňová bezplatná skúšobná lehota. Zostáva: ${licenseStatus.daysRemaining} dní."
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = "ID: ${licenseStatus.deviceId}",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        if (!licenseStatus.isActivated && onEnterKeyClick != null) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            OutlinedButton(
+                                onClick = {
+                                    onDismiss()
+                                    onEnterKeyClick()
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("Zadať aktivačný kód", fontSize = 12.sp)
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
 
                 Surface(
                     shape = RoundedCornerShape(16.dp),
