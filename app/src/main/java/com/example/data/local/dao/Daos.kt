@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.example.data.local.entity.Expense
 import com.example.data.local.entity.ForumComment
 import com.example.data.local.entity.ForumPost
 import com.example.data.local.entity.MedicalRecord
@@ -159,4 +160,22 @@ interface ForumDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertComments(comments: List<ForumComment>)
+}
+
+@Dao
+interface ExpenseDao {
+    @Query("SELECT * FROM expenses WHERE petId = :petId ORDER BY id DESC")
+    fun getExpensesForPet(petId: Long): Flow<List<Expense>>
+
+    @Query("SELECT * FROM expenses ORDER BY id DESC")
+    fun getAllExpenses(): Flow<List<Expense>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertExpense(expense: Expense): Long
+
+    @Delete
+    suspend fun deleteExpense(expense: Expense)
+
+    @Query("DELETE FROM expenses WHERE petId = :petId")
+    suspend fun deleteExpensesForPet(petId: Long)
 }

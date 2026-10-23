@@ -5,6 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.example.data.local.dao.ExpenseDao
 import com.example.data.local.dao.ForumDao
 import com.example.data.local.dao.MedicalRecordDao
 import com.example.data.local.dao.MedicationDao
@@ -13,6 +14,7 @@ import com.example.data.local.dao.PetPhotoDao
 import com.example.data.local.dao.ReminderDao
 import com.example.data.local.dao.VetClinicDao
 import com.example.data.local.dao.WeightLogDao
+import com.example.data.local.entity.Expense
 import com.example.data.local.entity.ForumComment
 import com.example.data.local.entity.ForumPost
 import com.example.data.local.entity.MedicalRecord
@@ -36,9 +38,10 @@ import kotlinx.coroutines.launch
         PetPhoto::class,
         VetClinic::class,
         ForumPost::class,
-        ForumComment::class
+        ForumComment::class,
+        Expense::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -50,6 +53,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun petPhotoDao(): PetPhotoDao
     abstract fun vetClinicDao(): VetClinicDao
     abstract fun forumDao(): ForumDao
+    abstract fun expenseDao(): ExpenseDao
 
     companion object {
         @Volatile
@@ -609,6 +613,68 @@ abstract class AppDatabase : RoomDatabase() {
                 )
             )
             forumDao.insertComments(forumComments)
+
+            val expenseDao = db.expenseDao()
+            expenseDao.insertExpense(
+                Expense(
+                    petId = 1,
+                    title = "Granule Acana Grass-Fed Lamb 11.4kg",
+                    category = "Krmivo & Maškrty",
+                    amountEur = 68.50,
+                    date = "15.10.2026",
+                    notes = "Mesačná zásoba hypoalergénnych granúl"
+                )
+            )
+            expenseDao.insertExpense(
+                Expense(
+                    petId = 1,
+                    title = "Bravecto žuvacia tableta 20-40kg",
+                    category = "Veterinár & Lieky",
+                    amountEur = 34.00,
+                    date = "01.09.2026",
+                    notes = "Ochrana proti kliešťom na 3 mesiace"
+                )
+            )
+            expenseDao.insertExpense(
+                Expense(
+                    petId = 1,
+                    title = "Ročné kombinované očkovanie DHPPi + L4",
+                    category = "Veterinár & Lieky",
+                    amountEur = 42.00,
+                    date = "14.05.2026",
+                    notes = "Klinika VetPoint Bratislava"
+                )
+            )
+            expenseDao.insertExpense(
+                Expense(
+                    petId = 1,
+                    title = "Kúpanie a vyčesávanie podsady (Salón)",
+                    category = "Salón & Hygiena",
+                    amountEur = 38.00,
+                    date = "28.09.2026",
+                    notes = "Jesenné presrsťovanie"
+                )
+            )
+            expenseDao.insertExpense(
+                Expense(
+                    petId = 2,
+                    title = "Veterinárna diéta Royal Canin Renal 4kg",
+                    category = "Krmivo & Maškrty",
+                    amountEur = 39.90,
+                    date = "10.10.2026",
+                    notes = "Renálna podpora obličiek"
+                )
+            )
+            expenseDao.insertExpense(
+                Expense(
+                    petId = 2,
+                    title = "Sonografia brušnej dutiny a kontrola moču",
+                    category = "Veterinár & Lieky",
+                    amountEur = 55.00,
+                    date = "15.08.2026",
+                    notes = "Klinika PrimaVet"
+                )
+            )
         }
     }
 }

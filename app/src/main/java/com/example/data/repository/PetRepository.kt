@@ -1,6 +1,7 @@
 package com.example.data.repository
 
 import com.example.data.local.AppDatabase
+import com.example.data.local.entity.Expense
 import com.example.data.local.entity.ForumComment
 import com.example.data.local.entity.ForumPost
 import com.example.data.local.entity.MedicalRecord
@@ -24,6 +25,7 @@ class PetRepository(private val database: AppDatabase) {
         database.weightLogDao().deleteWeightLogsForPet(pet.id)
         database.reminderDao().deleteRemindersForPet(pet.id)
         database.petPhotoDao().deletePhotosForPet(pet.id)
+        database.expenseDao().deleteExpensesForPet(pet.id)
         database.petDao().deletePet(pet)
     }
 
@@ -67,4 +69,10 @@ class PetRepository(private val database: AppDatabase) {
     suspend fun insertPost(post: ForumPost): Long = database.forumDao().insertPost(post)
     suspend fun updatePost(post: ForumPost) = database.forumDao().updatePost(post)
     suspend fun insertComment(comment: ForumComment): Long = database.forumDao().insertComment(comment)
+
+    // Expenses
+    fun getExpensesForPet(petId: Long): Flow<List<Expense>> = database.expenseDao().getExpensesForPet(petId)
+    val allExpenses: Flow<List<Expense>> = database.expenseDao().getAllExpenses()
+    suspend fun insertExpense(expense: Expense): Long = database.expenseDao().insertExpense(expense)
+    suspend fun deleteExpense(expense: Expense) = database.expenseDao().deleteExpense(expense)
 }

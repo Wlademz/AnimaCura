@@ -135,3 +135,15 @@ data class ForumComment(
     val content: String,
     val dateStr: String
 )
+
+@Entity(tableName = "expenses")
+data class Expense(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val petId: Long,
+    val title: String,
+    val category: String, // Krmivo & Maškrty, Veterinár & Lieky, Hračky & Výbava, Salón & Hygiena, Poistenie & Poplatky, Iné
+    val amountEur: Double,
+    val date: String, // DD.MM.YYYY
+    val notes: String = ""
+)

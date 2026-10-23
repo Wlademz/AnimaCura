@@ -8,6 +8,9 @@ import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.local.AppDatabase
+import com.example.data.local.VeterinaryDrug
+import com.example.data.local.VeterinaryDrugDatabase
+import com.example.data.local.entity.Expense
 import com.example.data.local.entity.ForumComment
 import com.example.data.local.entity.ForumPost
 import com.example.data.local.entity.MedicalRecord
@@ -18,6 +21,10 @@ import com.example.data.local.entity.Reminder
 import com.example.data.local.entity.VetClinic
 import com.example.data.local.entity.WeightLog
 import com.example.data.repository.PetRepository
+import com.example.util.NotificationHelper
+import com.example.util.PdfExportHelper
+import com.example.util.PetSyncExport
+import com.example.util.QrCodeUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -43,6 +50,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     val weightLogs: StateFlow<List<WeightLog>>
     val reminders: StateFlow<List<Reminder>>
     val photos: StateFlow<List<PetPhoto>>
+    val expenses: StateFlow<List<Expense>>
     val vetClinics: StateFlow<List<VetClinic>>
     val forumPosts: StateFlow<List<ForumPost>>
 
@@ -95,6 +103,10 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
 
         photos = _selectedPetId.flatMapLatest { petId ->
             if (petId != null) repository.getPhotosForPet(petId) else flowOf(emptyList())
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+        expenses = _selectedPetId.flatMapLatest { petId ->
+            if (petId != null) repository.getExpensesForPet(petId) else flowOf(emptyList())
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
         vetClinics = repository.allClinics.stateIn(
@@ -527,5 +539,166 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         } catch (e: Exception) {
             Toast.makeText(context, "Nepodarilo sa otvoriť e-mailového klienta.", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    // EXPENSE OPERATIONS
+    fun addExpense(title: String, category: String, amountEur: Double, date: String, notes: String) {
+        val currentPetId = _selectedPetId.value ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.insertExpense(
+                Expense(
+                    petId = currentPetId,
+                    title = title,
+                    category = category,
+                    amountEur = amountEur,
+                    date = date,
+                    notes = notes
+                )
+            )
+        }
+    }
+
+    fun deleteExpense(expense: Expense) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.deleteExpense(expense)
+        }
+    }
+
+    // BARCODE & DRUG QUICK-ACTIONS
+    fun addDrugToMedications(drug: VeterinaryDrug, customDosage: String = "", customFreq: String = "", notes: String = "") {
+        val currentPetId = _selectedPetId.value ?: return
+        val today = java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()).format(java.util.Date())
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.insertMedication(
+                Medication(
+                    petId = currentPetId,
+                    name = drug.name,
+                    dosage = if (customDosage.isNotBlank()) customDosage else drug.dosageGuideline,
+                    frequency = if (customFreq.isNotBlank()) customFreq else "1x denne podľa pokynov",
+                    form = drug.form,
+                    startDate = today,
+                    endDate = if (drug.isSupplement) "Dlhodobo" else "1 mesiac",
+                    isActive = true,
+                    timingNotes = if (notes.isNotBlank()) notes else drug.administrationMethod,
+                    prescribingVet = if (drug.prescriptionRequired) "Predpísané veterinárom" else "Voľnopredajný doplnok"
+                )
+            )
+        }
+    }
+
+    fun addDrugToExpenses(drug: VeterinaryDrug, priceEur: Double) {
+        val currentPetId = _selectedPetId.value ?: return
+        val today = java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()).format(java.util.Date())
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.insertExpense(
+                Expense(
+                    petId = currentPetId,
+                    title = drug.name,
+                    category = if (drug.isSupplement) "Krmivo & Maškrty" else "Veterinár & Lieky",
+                    amountEur = priceEur,
+                    date = today,
+                    notes = "Naskenované cez čiarový kód (EAN: ${drug.eanBarcode})"
+                )
+            )
+        }
+    }
+
+    // QR SYNC & EXPORT
+    fun getPetSyncPackage(): PetSyncExport? {
+        val pet = selectedPet.value ?: return null
+        val latestWeight = weightLogs.value.lastOrNull()?.weightKg ?: pet.targetWeightKg
+        val activeMeds = medications.value.filter { it.isActive }.map { "${it.name} (${it.dosage}, ${it.frequency})" }
+        val vacs = medicalRecords.value.filter { it.type == "Očkovanie" }.map { "${it.title} - ${it.date}" }
+
+        return PetSyncExport(
+            petName = pet.name,
+            species = pet.species,
+            breed = pet.breed,
+            birthDate = pet.birthDate,
+            gender = pet.gender,
+            chipNumber = pet.chipNumber,
+            passportNumber = pet.passportNumber,
+            latestWeight = latestWeight,
+            activeMedications = activeMeds,
+            recentVaccinations = vacs
+        )
+    }
+
+    fun getPetSyncQrCodeBitmap(sizePx: Int = 512): android.graphics.Bitmap? {
+        val sync = getPetSyncPackage() ?: return null
+        val jsonStr = QrCodeUtils.toJson(sync)
+        return QrCodeUtils.generateQrBitmap(jsonStr, sizePx)
+    }
+
+    fun importPetSyncData(sync: PetSyncExport, onComplete: (Boolean, String) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                // Find existing pet by chip or name or create new
+                val existing = allPets.value.firstOrNull {
+                    (it.chipNumber.isNotBlank() && it.chipNumber == sync.chipNumber) ||
+                            it.name.equals(sync.petName, ignoreCase = true)
+                }
+
+                val petId = if (existing != null) {
+                    existing.id
+                } else {
+                    repository.insertPet(
+                        Pet(
+                            name = sync.petName,
+                            species = sync.species,
+                            breed = sync.breed,
+                            birthDate = sync.birthDate,
+                            gender = sync.gender,
+                            chipNumber = sync.chipNumber,
+                            passportNumber = sync.passportNumber,
+                            targetWeightKg = sync.latestWeight
+                        )
+                    )
+                }
+
+                // If latest weight > 0, log it
+                if (sync.latestWeight > 0.0) {
+                    val today = java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault()).format(java.util.Date())
+                    repository.insertWeightLog(
+                        WeightLog(
+                            petId = petId,
+                            date = today,
+                            weightKg = sync.latestWeight,
+                            notes = "Importované cez QR kód"
+                        )
+                    )
+                }
+
+                _selectedPetId.value = petId
+                onComplete(true, "Úspešne importované údaje z QR kódu pre ${sync.petName}!")
+            } catch (e: Exception) {
+                onComplete(false, "Chyba pri importe: ${e.localizedMessage}")
+            }
+        }
+    }
+
+    // SYSTEM NOTIFICATION TEST
+    fun scheduleTestNotification() {
+        val petName = selectedPet.value?.name ?: "Zvieratko"
+        NotificationHelper.showImmediateNotification(
+            context = getApplication(),
+            title = "🐾 PetMed Pripomienka: $petName",
+            message = "Test notifikácie bol úspešný! Pripomienky liekov a očkovaní vás včas upozornia v notifikačnej lište."
+        )
+    }
+
+    // PRINTABLE PDF HEALTH PASSPORT
+    fun printPetMedicalPassport(context: Context) {
+        val pet = selectedPet.value ?: return
+        val latestWeight = weightLogs.value.lastOrNull()?.weightKg ?: pet.targetWeightKg
+        val qrBitmap = getPetSyncQrCodeBitmap(300)
+        PdfExportHelper.printPetMedicalRecord(
+            context = context,
+            pet = pet,
+            latestWeight = latestWeight,
+            records = medicalRecords.value,
+            medications = medications.value,
+            qrCodeBitmap = qrBitmap
+        )
     }
 }

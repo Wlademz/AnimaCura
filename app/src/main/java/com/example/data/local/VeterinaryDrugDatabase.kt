@@ -15,7 +15,9 @@ data class VeterinaryDrug(
     val storageInstructions: String,
     val prescriptionRequired: Boolean = true,
     val packageDescription: String = "",
-    val badgeColorHex: Long = 0xFF0D9488
+    val badgeColorHex: Long = 0xFF0D9488,
+    val eanBarcode: String = "",
+    val isSupplement: Boolean = false
 )
 
 object VeterinaryDrugDatabase {
@@ -36,7 +38,8 @@ object VeterinaryDrugDatabase {
             storageInstructions = "Uchovávajte pri teplote do 30 °C v pôvodnom blistri na ochranu pred vlhkosťou.",
             prescriptionRequired = true,
             packageDescription = "Biela škatuľka s modro-zeleným označením a vyobrazením psa/mačky podľa hmotnostnej kategórie.",
-            badgeColorHex = 0xFF0D9488
+            badgeColorHex = 0xFF0D9488,
+            eanBarcode = "8713184138126"
         ),
         VeterinaryDrug(
             id = "nexgard_spectra",
@@ -53,7 +56,8 @@ object VeterinaryDrugDatabase {
             storageInstructions = "Uchovávajte v pôvodnom obale pri teplote do 30 °C.",
             prescriptionRequired = true,
             packageDescription = "Červeno-biela škatuľka s výrazným logom NexGard Spectra a farebným kódovaním podľa váhy.",
-            badgeColorHex = 0xFFE07A5F
+            badgeColorHex = 0xFFE07A5F,
+            eanBarcode = "3661103046776"
         ),
         VeterinaryDrug(
             id = "apoquel",
@@ -70,7 +74,8 @@ object VeterinaryDrugDatabase {
             storageInstructions = "Uchovávajte pri teplote do 25 °C na suchom mieste mimo dosahu detí.",
             prescriptionRequired = true,
             packageDescription = "Bielo-oranžová plastová fľaštička alebo blister s modrým nápisom Apoquel.",
-            badgeColorHex = 0xFFF59E0B
+            badgeColorHex = 0xFFF59E0B,
+            eanBarcode = "5414736029580"
         ),
         VeterinaryDrug(
             id = "simparica_trio",
@@ -274,9 +279,94 @@ object VeterinaryDrugDatabase {
             storageInstructions = "Uchovávajte pri teplote 10 °C až 25 °C.",
             prescriptionRequired = false,
             packageDescription = "Hliníková tuba 20g v bielo-oranžovej škatuľke.",
-            badgeColorHex = 0xFFEA580C
+            badgeColorHex = 0xFFEA580C,
+            eanBarcode = "8594004981120"
+        ),
+        VeterinaryDrug(
+            id = "alavis_triple_blend",
+            name = "ALAVIS Triple Blend Maxima",
+            activeSubstance = "Glukozamín sulfát, Chondroitín sulfát, MSM, Kolagén typu I a II",
+            targetSpecies = listOf("Pes", "Kôň"),
+            category = "Kĺbová výživa & Pohybový aparát",
+            dosageGuideline = "Inicializačná dávka (prvých 14 dní): 1/2 odmerky na 15 kg váhy. Udržiavacia dávka: 1/4 odmerky.",
+            form = "Sypký ochutený prášok",
+            indications = "Intenzívna výživa, regenerácia a ochrana kĺbovej chrupavky a väzív. Vhodné pri artróze, dysplázii a pre aktívne a starnúce psy.",
+            contraindications = "Nepodávať pri individuálnej precitlivenosti na zložky preparátu.",
+            sideEffects = "Veľmi bezpečný výživový doplnok, ojedinele prechodná mäkšia stolica pri začiatku podávania.",
+            administrationMethod = "Prášok sa primieša priamo do dennej dávky krmiva (konzerva, granule, barf).",
+            storageInstructions = "Uchovávajte v suchu a tme pri izbovej teplote v dobre uzavretej dóze.",
+            prescriptionRequired = false,
+            packageDescription = "Biela plastová dóza 700g s červeným uzáverom a zlatým nápisom ALAVIS.",
+            badgeColorHex = 0xFF059669,
+            eanBarcode = "8594191410014",
+            isSupplement = true
+        ),
+        VeterinaryDrug(
+            id = "brit_salmon_oil",
+            name = "Brit Care Salmon Oil (Lososový olej)",
+            activeSubstance = "100% čistý nórsky lososový olej (Omega-3 EPA + DHA)",
+            targetSpecies = listOf("Pes", "Mačka"),
+            category = "Srsť, Koža & Imunita (Doplnok)",
+            dosageGuideline = "5 ml (1 stlačenie pumpičky) na každých 10 kg telesnej hmotnosti denne.",
+            form = "Čistý tekutý olej s pumpičkou",
+            indications = "Podpora zdravej kože, hustej a lesklej srsti, zmiernenie svrbenia a lupín, posilnenie kardiovaskulárneho systému a kĺbov.",
+            contraindications = "Bez známych kontraindikácií.",
+            sideEffects = "Pri nadmernom dávkovaní mastná stolica.",
+            administrationMethod = "Naliať priamo na krmivo (granule alebo mäso).",
+            storageInstructions = "Po otvorení skladujte na tmavom chladnom mieste.",
+            prescriptionRequired = false,
+            packageDescription = "Tmavá fľaša 500 ml s praktickým dávkovačom a vyobrazením lososa.",
+            badgeColorHex = 0xFF2563EB,
+            eanBarcode = "8595602521197",
+            isSupplement = true
+        ),
+        VeterinaryDrug(
+            id = "canvit_biotin",
+            name = "Canvit Biotin Maxi",
+            activeSubstance = "Biotín, Zinok, Vitamín B2, B6, Niacínamid, Vápnik",
+            targetSpecies = listOf("Pes"),
+            category = "Vitamíny & Regenerácia srsti",
+            dosageGuideline = "1 tableta na každých 15 kg telesnej hmotnosti denne.",
+            form = "Aromatizované žuvacie tablety",
+            indications = "Regenerácia kože, podsady, matnej a lámavé srsti a podpora pevnosti pazúrikov. Ideálne pri jarnom a jesennom pĺznutí.",
+            contraindications = "Žiadne kontraindikácie.",
+            sideEffects = "Žiadne.",
+            administrationMethod = "Podávať priamo z ruky ako pamlsok alebo rozdrvené do krmiva.",
+            storageInstructions = "Uchovávajte v suchu a chlade do 25 °C.",
+            prescriptionRequired = false,
+            packageDescription = "Plastová dóza 500g s modrým vrchnákom.",
+            badgeColorHex = 0xFF9333EA,
+            eanBarcode = "8595602509126",
+            isSupplement = true
+        ),
+        VeterinaryDrug(
+            id = "vetomune",
+            name = "VetExpert Vetomune",
+            activeSubstance = "Beta-1,3/1,6-glukán, HMB (kyselina beta-hydroxy-beta-metylmaslová)",
+            targetSpecies = listOf("Pes", "Mačka"),
+            category = "Imunita & Odolnosť (Doplnok)",
+            dosageGuideline = "Pes/mačka do 10 kg: 1 kapsula denne; nad 10 kg: 2 kapsuly denne.",
+            form = "Twist-off kapsula (odkrúcací uzáver)",
+            indications = "Dvojitá podpora bunkovej a humorálnej imunity. Odporúča sa pred očkovaním, po operáciách a v období rekonvalescencie.",
+            contraindications = "Žiadne.",
+            sideEffects = "Veľmi bezpečná formulácia bez vedľajších účinkov.",
+            administrationMethod = "Odkrútiť hlavičku kapsuly a vytlačiť chutný obsah do tlamy alebo na krmivo.",
+            storageInstructions = "Skladovať pri teplote 15–25 °C na suchom mieste.",
+            prescriptionRequired = false,
+            packageDescription = "Biele balenie 60 kapsúl Twist-off s červeným logom VetExpert.",
+            badgeColorHex = 0xFFDC2626,
+            eanBarcode = "5902414201018",
+            isSupplement = true
         )
     )
+
+    fun findDrugByBarcode(code: String): VeterinaryDrug? {
+        val clean = code.trim()
+        if (clean.isBlank()) return null
+        return drugs.firstOrNull { drug ->
+            drug.eanBarcode.isNotBlank() && (drug.eanBarcode == clean || clean.contains(drug.eanBarcode) || drug.eanBarcode.contains(clean))
+        }
+    }
 
     fun searchDrugs(query: String, speciesFilter: String = "Všetky", categoryFilter: String = "Všetky"): List<VeterinaryDrug> {
         return drugs.filter { drug ->
@@ -284,7 +374,8 @@ object VeterinaryDrugDatabase {
                     drug.name.contains(query, ignoreCase = true) ||
                     drug.activeSubstance.contains(query, ignoreCase = true) ||
                     drug.indications.contains(query, ignoreCase = true) ||
-                    drug.category.contains(query, ignoreCase = true)
+                    drug.category.contains(query, ignoreCase = true) ||
+                    drug.eanBarcode.contains(query, ignoreCase = true)
 
             val matchesSpecies = speciesFilter == "Všetky" || drug.targetSpecies.contains(speciesFilter)
             val matchesCategory = categoryFilter == "Všetky" || drug.category.contains(categoryFilter, ignoreCase = true)

@@ -47,17 +47,22 @@ import com.example.ui.components.AddPetDialog
 import com.example.ui.components.AddPhotoDialog
 import com.example.ui.components.AddReminderDialog
 import com.example.ui.components.AddWeightDialog
+import androidx.activity.compose.BackHandler
+import com.example.ui.components.BarcodeScannerDialog
 import com.example.ui.components.ConfirmDeletePetDialog
 import com.example.ui.components.EditPetDialog
 import com.example.ui.components.EnterLicenseKeyDialog
 import com.example.ui.components.ExportVetDialog
 import com.example.ui.components.LicenseExpiredLockScreen
 import com.example.ui.components.PetPhotoPickerDialog
+import com.example.ui.components.PetQrSyncDialog
 import com.example.ui.components.PetTopSelectorBar
 import com.example.ui.screens.CommunityForumScreen
 import com.example.ui.screens.DashboardScreen
 import com.example.ui.screens.EmergencyClinicsScreen
 import com.example.ui.screens.MedicalRecordsScreen
+import com.example.ui.screens.PetExpensesScreen
+import com.example.ui.screens.ToxicityScreen
 import com.example.ui.screens.WeightAndGalleryScreen
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.viewmodel.PetViewModel
@@ -103,8 +108,12 @@ fun MainAppContent(viewModel: PetViewModel) {
     val forumPosts by viewModel.forumPosts.collectAsStateWithLifecycle()
     val selectedPostId by viewModel.selectedPostId.collectAsStateWithLifecycle()
     val postComments by viewModel.postComments.collectAsStateWithLifecycle()
+    val expenses by viewModel.expenses.collectAsStateWithLifecycle()
 
     var currentNavIndex by remember { mutableIntStateOf(0) }
+    var currentSecondaryScreen by remember { mutableStateOf<String?>(null) } // "toxicity", "expenses"
+    var showBarcodeDialog by remember { mutableStateOf(false) }
+    var showQrSyncDialog by remember { mutableStateOf(false) }
 
     // Dialog state controllers
     var showAddPetDialog by remember { mutableStateOf(false) }
@@ -158,11 +167,14 @@ fun MainAppContent(viewModel: PetViewModel) {
             ) {
                 navItems.forEachIndexed { index, item ->
                     NavigationBarItem(
-                        selected = currentNavIndex == index,
-                        onClick = { currentNavIndex = index },
+                        selected = currentNavIndex == index && currentSecondaryScreen == null,
+                        onClick = {
+                            currentSecondaryScreen = null
+                            currentNavIndex = index
+                        },
                         icon = {
                             Icon(
-                                imageVector = if (currentNavIndex == index) item.selectedIcon else item.unselectedIcon,
+                                imageVector = if (currentNavIndex == index && currentSecondaryScreen == null) item.selectedIcon else item.unselectedIcon,
                                 contentDescription = item.title
                             )
                         },
@@ -175,34 +187,62 @@ fun MainAppContent(viewModel: PetViewModel) {
         modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
-            when (currentNavIndex) {
-                0 -> DashboardScreen(
-                    pet = selectedPet,
-                    medications = medications,
-                    medicalRecords = medicalRecords,
-                    weightLogs = weightLogs,
-                    reminders = reminders,
-                    onAddRecordClick = { showAddRecordDialog = true },
-                    onAddMedClick = { showAddMedDialog = true },
-                    onAddWeightClick = { showAddWeightDialog = true },
-                    onAddReminderClick = { showAddReminderDialog = true },
-                    onMarkDoseTaken = { viewModel.markDoseTaken(it) },
-                    onToggleReminder = { viewModel.toggleReminderCompleted(it) },
-                    onEmergencyClick = { currentNavIndex = 3 },
-                    onExportClick = { showExportDialog = true },
-                    onEditPetClick = { pet ->
-                        petToEditOrDelete = pet
-                        showEditPetDialog = true
-                    },
-                    onDeletePetClick = { pet ->
-                        petToEditOrDelete = pet
-                        showConfirmDeletePetDialog = true
-                    },
-                    onChangePhotoClick = { pet ->
-                        petForPhotoChange = pet
-                        showPetPhotoDialog = true
-                    }
-                )
+            if (currentSecondaryScreen != null) {
+                BackHandler {
+                    currentSecondaryScreen = null
+                }
+                when (currentSecondaryScreen) {
+                    "toxicity" -> ToxicityScreen(
+                        selectedPet = selectedPet,
+                        onEmergencyCallClick = {
+                            currentSecondaryScreen = null
+                            currentNavIndex = 3
+                        }
+                    )
+                    "expenses" -> PetExpensesScreen(
+                        pet = selectedPet,
+                        expenses = expenses,
+                        onAddExpense = { title, category, amount, date, notes ->
+                            viewModel.addExpense(title, category, amount, date, notes)
+                        },
+                        onDeleteExpense = { viewModel.deleteExpense(it) }
+                    )
+                }
+            } else {
+                when (currentNavIndex) {
+                    0 -> DashboardScreen(
+                        pet = selectedPet,
+                        medications = medications,
+                        medicalRecords = medicalRecords,
+                        weightLogs = weightLogs,
+                        reminders = reminders,
+                        onAddRecordClick = { showAddRecordDialog = true },
+                        onAddMedClick = { showAddMedDialog = true },
+                        onAddWeightClick = { showAddWeightDialog = true },
+                        onAddReminderClick = { showAddReminderDialog = true },
+                        onMarkDoseTaken = { viewModel.markDoseTaken(it) },
+                        onToggleReminder = { viewModel.toggleReminderCompleted(it) },
+                        onEmergencyClick = { currentNavIndex = 3 },
+                        onExportClick = { showExportDialog = true },
+                        onEditPetClick = { pet ->
+                            petToEditOrDelete = pet
+                            showEditPetDialog = true
+                        },
+                        onDeletePetClick = { pet ->
+                            petToEditOrDelete = pet
+                            showConfirmDeletePetDialog = true
+                        },
+                        onChangePhotoClick = { pet ->
+                            petForPhotoChange = pet
+                            showPetPhotoDialog = true
+                        },
+                        onScanBarcodeClick = { showBarcodeDialog = true },
+                        onQrSyncClick = { showQrSyncDialog = true },
+                        onToxicityClick = { currentSecondaryScreen = "toxicity" },
+                        onExpensesClick = { currentSecondaryScreen = "expenses" },
+                        onPrintPdfClick = { viewModel.printPetMedicalPassport(context) },
+                        onTestNotificationClick = { viewModel.scheduleTestNotification() }
+                    )
 
                 1 -> MedicalRecordsScreen(
                     pet = selectedPet,
@@ -256,6 +296,7 @@ fun MainAppContent(viewModel: PetViewModel) {
             }
         }
     }
+}
 
     // Interactive Dialogs
     if (showAddPetDialog) {
@@ -404,6 +445,32 @@ fun MainAppContent(viewModel: PetViewModel) {
         AboutAppDialog(
             onDismiss = { showAboutDialog = false },
             onEnterKeyClick = { showEnterKeyDialog = true }
+        )
+    }
+
+    if (showBarcodeDialog) {
+        BarcodeScannerDialog(
+            petName = selectedPet?.name ?: "Zvieratko",
+            onDismiss = { showBarcodeDialog = false },
+            onAddMedication = { drug, dosage, freq ->
+                viewModel.addDrugToMedications(drug, dosage, freq)
+            },
+            onAddExpense = { drug, amount ->
+                viewModel.addDrugToExpenses(drug, amount)
+            }
+        )
+    }
+
+    if (showQrSyncDialog) {
+        PetQrSyncDialog(
+            selectedPet = selectedPet,
+            getQrBitmap = { viewModel.getPetSyncQrCodeBitmap(512) },
+            getSyncPackage = { viewModel.getPetSyncPackage() },
+            onImportSyncData = { sync, onComplete ->
+                viewModel.importPetSyncData(sync, onComplete)
+            },
+            onPrintPdf = { viewModel.printPetMedicalPassport(context) },
+            onDismiss = { showQrSyncDialog = false }
         )
     }
 

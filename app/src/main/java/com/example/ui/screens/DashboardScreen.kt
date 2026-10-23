@@ -20,16 +20,23 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Emergency
+import androidx.compose.material.icons.filled.Euro
 import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.QrCode
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.Scale
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -81,6 +88,12 @@ fun DashboardScreen(
     onEditPetClick: (Pet) -> Unit = {},
     onDeletePetClick: (Pet) -> Unit = {},
     onChangePhotoClick: ((Pet) -> Unit)? = null,
+    onScanBarcodeClick: () -> Unit = {},
+    onQrSyncClick: () -> Unit = {},
+    onToxicityClick: () -> Unit = {},
+    onExpensesClick: () -> Unit = {},
+    onPrintPdfClick: () -> Unit = {},
+    onTestNotificationClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val activeMeds = medications.filter { it.isActive }
@@ -123,6 +136,120 @@ fun DashboardScreen(
                         text = "Evidujte všetky lieky, očkovania a vyšetrenia na jednom mieste.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        // QUICK TOOLS GRID (Barcode, QR Sync, Toxicity, Expenses, PDF Print, Notification Alert)
+        Card(
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("quick_tools_section")
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Rýchle nástroje a funkcie",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Text(
+                            text = "Smart Pet Care",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Row 1: Barcode Scanner & QR Offline Sync
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    QuickToolItem(
+                        icon = Icons.Default.QrCodeScanner,
+                        title = "Čiarový kód",
+                        subtitle = "Skener liekov & EAN",
+                        badgeColor = Color(0xFF0D9488),
+                        onClick = onScanBarcodeClick,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    QuickToolItem(
+                        icon = Icons.Default.QrCode,
+                        title = "QR Sync",
+                        subtitle = "Zdieľať / Import bez písania",
+                        badgeColor = Color(0xFF6366F1),
+                        onClick = onQrSyncClick,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Row 2: Toxicity / Chocolate Calculator & Expenses Tracker
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    QuickToolItem(
+                        icon = Icons.Default.Warning,
+                        title = "Môže to zjesť?",
+                        subtitle = "Toxicita & Čokoláda",
+                        badgeColor = Color(0xFFEA580C),
+                        onClick = onToxicityClick,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    QuickToolItem(
+                        icon = Icons.Default.Euro,
+                        title = "Výdavky & Náklady",
+                        subtitle = "Krmivo, veterina, salón",
+                        badgeColor = Color(0xFF059669),
+                        onClick = onExpensesClick,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Row 3: PDF Medical Pass & Notification Test
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    QuickToolItem(
+                        icon = Icons.Default.PictureAsPdf,
+                        title = "Tlač do PDF",
+                        subtitle = "Karta pre veterinára s QR",
+                        badgeColor = Color(0xFF0284C7),
+                        onClick = onPrintPdfClick,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    QuickToolItem(
+                        icon = Icons.Default.Notifications,
+                        title = "Test zvonenia",
+                        subtitle = "Skúška notifikácie v mobile",
+                        badgeColor = Color(0xFF8B5CF6),
+                        onClick = onTestNotificationClick,
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
@@ -433,6 +560,61 @@ fun ReminderRow(
                     text = "${reminder.type} • ${reminder.dueDate} o ${reminder.dueTime}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun QuickToolItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    badgeColor: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+        modifier = modifier
+            .clip(RoundedCornerShape(14.dp))
+            .clickable { onClick() }
+    ) {
+        Row(
+            modifier = Modifier.padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(CircleShape)
+                    .background(badgeColor.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = badgeColor,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Column {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    fontSize = 10.sp
                 )
             }
         }
