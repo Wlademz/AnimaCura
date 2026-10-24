@@ -1859,7 +1859,7 @@ fun AboutAppDialog(
                             text = if (licenseStatus.isActivated) {
                                 "Aplikácia je plne aktivovaná trvalým licenčným kľúčom."
                             } else {
-                                "30-dňová bezplatná skúšobná lehota. Zostáva: ${licenseStatus.daysRemaining} dní."
+                                "7-dňová bezplatná skúšobná lehota. Zostáva: ${licenseStatus.daysRemaining} dní."
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant

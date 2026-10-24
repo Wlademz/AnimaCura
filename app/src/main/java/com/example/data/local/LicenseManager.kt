@@ -11,7 +11,7 @@ data class LicenseStatus(
     val isActivated: Boolean,
     val isExpired: Boolean,
     val daysRemaining: Int,
-    val totalTrialDays: Int = 30,
+    val totalTrialDays: Int = 7,
     val deviceId: String,
     val activeKey: String?
 )
@@ -24,7 +24,7 @@ object LicenseManager {
     private const val KEY_IS_ACTIVATED = "is_license_activated"
     private const val KEY_LICENSE_KEY = "activated_license_key"
 
-    private const val TRIAL_DURATION_DAYS = 30
+    private const val TRIAL_DURATION_DAYS = 7
     private const val MS_PER_DAY = 24 * 60 * 60 * 1000L
     private const val SECRET_SALT = "WLADEMZ_PETMED_SECURITY_SALT_2026"
 

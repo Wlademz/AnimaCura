@@ -123,7 +123,7 @@ fun LicenseExpiredLockScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "30-dňová bezplatná skúšobná verzia aplikácie PetMed Zdravotný Denník sa skončila. Pre pokračovanie zadajte Váš aktivačný kód.",
+                    text = "7-dňová bezplatná skúšobná verzia aplikácie PetMed Zdravotný Denník sa skončila. Pre pokračovanie zadajte Váš aktivačný kód.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,

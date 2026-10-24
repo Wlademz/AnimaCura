@@ -88,7 +88,7 @@ fun MainAppContent(viewModel: PetViewModel) {
     var licenseRefreshCounter by remember { mutableIntStateOf(0) }
     val licenseStatus = remember(licenseRefreshCounter) { LicenseManager.getLicenseStatus(context) }
 
-    // If 30-day trial is expired and application is not activated with a valid key, lock the app
+    // If 7-day trial is expired and application is not activated with a valid key, lock the app
     if (licenseStatus.isExpired && !licenseStatus.isActivated) {
         LicenseExpiredLockScreen(
             licenseStatus = licenseStatus,
