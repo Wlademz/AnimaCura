@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -83,11 +84,15 @@ fun PetTopSelectorBar(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        tonalElevation = 4.dp,
-        modifier = modifier.fillMaxWidth()
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 3.dp,
+        shadowElevation = 2.dp,
+        modifier = modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
-            // Full width panoramic banner image with Horse, Dog, Cat and Rabbit silhouettes
+            // Full width panoramic banner image with Horse, Dog, Cat and Rabbit silhouettes (clean without any mock phone status bar)
             Image(
                 painter = painterResource(id = R.drawable.pet_banner_panoramic_clean_1787729777947),
                 contentDescription = "Panoramatické zvieratká",
@@ -136,34 +141,39 @@ fun PetTopSelectorBar(
                                 modifier = Modifier.testTag("top_bar_pet_avatar")
                             )
                         } else {
-                            Box(
+                            Image(
+                                painter = painterResource(id = R.drawable.pet_med_icon_1787650018098),
+                                contentDescription = "PetMed Logo",
                                 modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Pets,
-                                    contentDescription = "Pet Logo",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
+                                    .size(42.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .border(1.5.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp)),
+                                contentScale = ContentScale.Crop
+                            )
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         Column(modifier = Modifier.weight(1f, fill = false)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.pet_med_icon_1787650018098),
+                                    contentDescription = "PetMed Logo",
+                                    modifier = Modifier
+                                        .size(18.dp)
+                                        .clip(RoundedCornerShape(4.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "PetMed Zdravotný Denník",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                )
+                            }
                             Text(
-                                text = "PetMed Zdravotný Denník",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 1,
-                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = if (selectedPet != null) "${selectedPet.name} (${selectedPet.species})" else "Žiadne zvieratko",
+                                text = if (selectedPet != null) "${selectedPet.name} (${selectedPet.species})" else "Zdravotný záznam zvieratka",
                                 style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -184,7 +194,7 @@ fun PetTopSelectorBar(
                                     .testTag("app_info_top_button")
                                     .size(36.dp)
                                     .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                                     .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), CircleShape)
                             ) {
                                 Icon(
@@ -203,7 +213,7 @@ fun PetTopSelectorBar(
                                     .testTag("edit_selected_pet_top_button")
                                     .size(36.dp)
                                     .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                                     .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), CircleShape)
                             ) {
                                 Icon(
@@ -251,17 +261,17 @@ fun PetTopSelectorBar(
                             color = if (isSelected) {
                                 MaterialTheme.colorScheme.primary
                             } else {
-                                MaterialTheme.colorScheme.surface.copy(alpha = 0.88f)
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
                             },
                             contentColor = if (isSelected) {
                                 MaterialTheme.colorScheme.onPrimary
                             } else {
-                                MaterialTheme.colorScheme.onSurface
+                                MaterialTheme.colorScheme.onSurfaceVariant
                             },
                             border = if (!isSelected) {
-                                androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+                                androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                             } else null,
-                            shadowElevation = if (isSelected) 3.dp else 1.dp,
+                            shadowElevation = if (isSelected) 2.dp else 0.dp,
                             modifier = Modifier
                                 .testTag("pet_chip_${pet.id}")
                                 .clip(RoundedCornerShape(20.dp))
