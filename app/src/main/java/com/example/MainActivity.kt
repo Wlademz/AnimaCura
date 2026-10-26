@@ -5,12 +5,26 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.example.util.InAppUpdateManager
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Emergency
 import androidx.compose.material.icons.filled.Forum
@@ -134,6 +148,30 @@ fun MainAppContent(viewModel: PetViewModel) {
     var showEnterKeyDialog by remember { mutableStateOf(false) }
     var petForPhotoChange by remember { mutableStateOf<Pet?>(null) }
     var showPetPhotoDialog by remember { mutableStateOf(false) }
+
+    val inAppUpdateManager = remember { InAppUpdateManager(context) }
+    var isUpdateReadyToInstall by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        val activity = context as? android.app.Activity
+        inAppUpdateManager.checkForUpdate(
+            onUpdateAvailable = { updateInfo ->
+                if (activity != null) {
+                    inAppUpdateManager.startFlexibleUpdate(activity, updateInfo) {
+                        isUpdateReadyToInstall = true
+                    }
+                }
+            },
+            onNoUpdate = {},
+            onError = {}
+        )
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            inAppUpdateManager.unregisterInstallListener()
+        }
+    }
 
     val navItems = listOf(
         NavItem("Prehľad", Icons.Filled.Pets, Icons.Outlined.Pets, "nav_dashboard"),
@@ -298,6 +336,43 @@ fun MainAppContent(viewModel: PetViewModel) {
                     },
                     onNewPostClick = { showAddForumPostDialog = true }
                 )
+            }
+
+            if (isUpdateReadyToInstall) {
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = RoundedCornerShape(14.dp),
+                    shadowElevation = 6.dp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp)
+                        .align(Alignment.BottomCenter)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Nová verzia je pripravená!",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Text(
+                                text = "Kliknite pre reštart a inštaláciu aktualizácie.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
+                            )
+                        }
+                        Button(
+                            onClick = { inAppUpdateManager.completeUpdate() }
+                        ) {
+                            Text("Inštalovať")
+                        }
+                    }
+                }
             }
         }
     }

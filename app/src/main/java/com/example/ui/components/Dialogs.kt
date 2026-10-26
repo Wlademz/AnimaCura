@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
@@ -27,10 +28,13 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Pets
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -1757,6 +1761,11 @@ fun AboutAppDialog(
     val context = androidx.compose.ui.platform.LocalContext.current
     val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
     val licenseStatus = remember { com.example.data.local.LicenseManager.getLicenseStatus(context) }
+    val updateManager = remember { com.example.util.InAppUpdateManager(context) }
+    val cadenceInfo = remember { updateManager.getCadenceInfo() }
+    var isCheckingUpdate by remember { mutableStateOf(false) }
+    var updateStatusMessage by remember { mutableStateOf<String?>(null) }
+    var isUpdateDownloaded by remember { mutableStateOf(false) }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -1798,7 +1807,7 @@ fun AboutAppDialog(
                 )
 
                 Text(
-                    text = "Verzia 1.0.0",
+                    text = "Verzia ${com.example.BuildConfig.VERSION_NAME} (Zostavenie ${com.example.BuildConfig.VERSION_CODE})",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1889,6 +1898,174 @@ fun AboutAppDialog(
                                 shape = RoundedCornerShape(8.dp)
                             ) {
                                 Text("Zadať aktivačný kód", fontSize = 12.sp)
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // In-App Updates & 3-month cadence card
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = if (cadenceInfo.isCadenceDue) {
+                        MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.35f)
+                    } else {
+                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        horizontalAlignment = Alignment.Start
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.SystemUpdate,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Aktualizácie & Vydania",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            if (cadenceInfo.isCadenceDue) {
+                                Surface(
+                                    color = MaterialTheme.colorScheme.errorContainer,
+                                    shape = RoundedCornerShape(6.dp)
+                                ) {
+                                    Text(
+                                        text = "3-mesačný termín",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            } else {
+                                Surface(
+                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    shape = RoundedCornerShape(6.dp)
+                                ) {
+                                    Text(
+                                        text = "Aktuálna",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = cadenceInfo.message,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        if (updateStatusMessage != null) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.surface,
+                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = updateStatusMessage!!,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(8.dp)
+                                )
+                            }
+                        }
+
+                        if (isUpdateDownloaded) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Button(
+                                onClick = { updateManager.completeUpdate() },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("Reštartovať a nainštalovať", fontSize = 12.sp)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    isCheckingUpdate = true
+                                    updateStatusMessage = null
+                                    val activity = context as? android.app.Activity
+                                    updateManager.checkForUpdate(
+                                        onUpdateAvailable = { appUpdateInfo ->
+                                            isCheckingUpdate = false
+                                            updateStatusMessage = "K dispozícii je nová verzia (kód: ${appUpdateInfo.availableVersionCode()})!"
+                                            if (activity != null) {
+                                                updateManager.startFlexibleUpdate(activity, appUpdateInfo) {
+                                                    isUpdateDownloaded = true
+                                                    updateStatusMessage = "Nová verzia je pripravená na inštaláciu."
+                                                }
+                                            }
+                                        },
+                                        onNoUpdate = {
+                                            isCheckingUpdate = false
+                                            updateStatusMessage = "Máte nainštalovanú najnovšiu dostupnú verziu."
+                                        },
+                                        onError = {
+                                            isCheckingUpdate = false
+                                            updateStatusMessage = "Aplikácia je aktuálna (alebo beží v teste)."
+                                        }
+                                    )
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(8.dp),
+                                enabled = !isCheckingUpdate
+                            ) {
+                                if (isCheckingUpdate) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(14.dp),
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    Text("Overiť Play Store", fontSize = 11.sp, maxLines = 1)
+                                }
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    updateManager.addReminderToCalendar(context)
+                                    android.widget.Toast.makeText(context, "Pripomienka na 3 mesiace bola otvorená v kalendári", android.widget.Toast.LENGTH_SHORT).show()
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CalendarMonth,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Pripomienka", fontSize = 11.sp, maxLines = 1)
                             }
                         }
                     }
