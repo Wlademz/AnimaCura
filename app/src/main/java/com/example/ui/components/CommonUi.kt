@@ -164,7 +164,7 @@ fun PetTopSelectorBar(
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "PetMed Zdravotný Denník",
+                                    text = "PetMed Denník",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = MaterialTheme.colorScheme.onSurface,
