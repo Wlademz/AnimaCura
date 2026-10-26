@@ -33,6 +33,7 @@ class PetRepository(private val database: AppDatabase) {
     fun getRecordsForPet(petId: Long): Flow<List<MedicalRecord>> = database.medicalRecordDao().getRecordsForPet(petId)
     val allMedicalRecords: Flow<List<MedicalRecord>> = database.medicalRecordDao().getAllRecords()
     suspend fun insertRecord(record: MedicalRecord): Long = database.medicalRecordDao().insertRecord(record)
+    suspend fun updateRecord(record: MedicalRecord) = database.medicalRecordDao().updateRecord(record)
     suspend fun deleteRecord(record: MedicalRecord) = database.medicalRecordDao().deleteRecord(record)
 
     // Medications

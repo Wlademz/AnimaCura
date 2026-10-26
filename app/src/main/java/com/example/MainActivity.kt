@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.local.LicenseManager
+import com.example.data.local.entity.MedicalRecord
 import com.example.data.local.entity.Pet
 import com.example.ui.components.AboutAppDialog
 import com.example.ui.components.AddForumPostDialog
@@ -121,6 +122,7 @@ fun MainAppContent(viewModel: PetViewModel) {
     var showConfirmDeletePetDialog by remember { mutableStateOf(false) }
     var petToEditOrDelete by remember { mutableStateOf<Pet?>(null) }
     var showAddRecordDialog by remember { mutableStateOf(false) }
+    var recordToEdit by remember { mutableStateOf<MedicalRecord?>(null) }
     var showAddMedDialog by remember { mutableStateOf(false) }
     var drugToAssign by remember { mutableStateOf<com.example.data.local.VeterinaryDrug?>(null) }
     var showAddWeightDialog by remember { mutableStateOf(false) }
@@ -253,6 +255,9 @@ fun MainAppContent(viewModel: PetViewModel) {
                         drugToAssign = null
                         showAddRecordDialog = true
                     },
+                    onEditRecordClick = { record ->
+                        recordToEdit = record
+                    },
                     onAddMedicationClick = {
                         drugToAssign = null
                         showAddMedDialog = true
@@ -367,6 +372,27 @@ fun MainAppContent(viewModel: PetViewModel) {
             onConfirm = { type, title, date, clinic, diagnosis, cost, notes, nextDueDate ->
                 viewModel.addMedicalRecord(type, title, date, clinic, diagnosis, cost, notes, nextDueDate)
                 showAddRecordDialog = false
+            }
+        )
+    }
+
+    if (recordToEdit != null) {
+        AddMedicalRecordDialog(
+            recordToEdit = recordToEdit,
+            onDismiss = { recordToEdit = null },
+            onConfirm = { type, title, date, clinic, diagnosis, cost, notes, nextDueDate ->
+                viewModel.updateMedicalRecord(
+                    recordId = recordToEdit!!.id,
+                    type = type,
+                    title = title,
+                    date = date,
+                    clinic = clinic,
+                    diagnosis = diagnosis,
+                    cost = cost,
+                    notes = notes,
+                    nextDueDate = nextDueDate
+                )
+                recordToEdit = null
             }
         )
     }

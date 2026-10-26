@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.MedicalServices
@@ -73,6 +74,7 @@ fun MedicalRecordsScreen(
     medications: List<Medication>,
     latestWeight: Double? = null,
     onAddRecordClick: () -> Unit,
+    onEditRecordClick: (MedicalRecord) -> Unit = {},
     onAddMedicationClick: () -> Unit,
     onDeleteRecord: (MedicalRecord) -> Unit,
     onDeleteMedication: (Medication) -> Unit,
@@ -194,6 +196,7 @@ fun MedicalRecordsScreen(
                             items(filteredRecords, key = { it.id }) { record ->
                                 MedicalRecordCard(
                                     record = record,
+                                    onEdit = { onEditRecordClick(record) },
                                     onDelete = { onDeleteRecord(record) }
                                 )
                             }
@@ -404,6 +407,7 @@ fun MedicalRecordsScreen(
 @Composable
 fun MedicalRecordCard(
     record: MedicalRecord,
+    onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
     val typeColor = when {
@@ -421,7 +425,9 @@ fun MedicalRecordCard(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onEdit() }
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(
@@ -449,9 +455,25 @@ fun MedicalRecordCard(
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    IconButton(
+                        onClick = onEdit,
+                        modifier = Modifier
+                            .testTag("edit_record_${record.id}")
+                            .size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Upraviť záznam",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                     IconButton(
                         onClick = onDelete,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier
+                            .testTag("delete_record_${record.id}")
+                            .size(28.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,

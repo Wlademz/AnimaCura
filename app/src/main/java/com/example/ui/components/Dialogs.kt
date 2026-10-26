@@ -20,9 +20,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.Search
@@ -846,6 +848,7 @@ fun ConfirmDeletePetDialog(
 
 @Composable
 fun AddMedicalRecordDialog(
+    recordToEdit: MedicalRecord? = null,
     onDismiss: () -> Unit,
     onConfirm: (
         type: String,
@@ -870,15 +873,15 @@ fun AddMedicalRecordDialog(
         "Alergia / Diagnóza",
         "Iné"
     )
-    var selectedType by remember { mutableStateOf(types[0]) }
-    var title by remember { mutableStateOf("") }
+    var selectedType by remember { mutableStateOf(recordToEdit?.type ?: types[0]) }
+    var title by remember { mutableStateOf(recordToEdit?.title ?: "") }
     val currentDateStr = remember { SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date()) }
-    var date by remember { mutableStateOf(currentDateStr) }
-    var clinic by remember { mutableStateOf("") }
-    var diagnosis by remember { mutableStateOf("") }
-    var cost by remember { mutableStateOf("") }
-    var notes by remember { mutableStateOf("") }
-    var nextDueDate by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf(recordToEdit?.date ?: currentDateStr) }
+    var clinic by remember { mutableStateOf(recordToEdit?.vetClinic ?: "") }
+    var diagnosis by remember { mutableStateOf(recordToEdit?.diagnosis ?: "") }
+    var cost by remember { mutableStateOf(if (recordToEdit != null && recordToEdit.costEur > 0) recordToEdit.costEur.toString() else "") }
+    var notes by remember { mutableStateOf(recordToEdit?.notes ?: "") }
+    var nextDueDate by remember { mutableStateOf(recordToEdit?.nextDueDate ?: "") }
 
     val titlePlaceholder = when (selectedType) {
         "Operácia / Zákrok" -> "napr. Kastrácia, Šitie rany, Odstránenie cysty"
@@ -918,7 +921,7 @@ fun AddMedicalRecordDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Nový Zdravotný Záznam",
+                        text = if (recordToEdit != null) "Upraviť Zdravotný Záznam" else "Nový Zdravotný Záznam",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
@@ -1041,7 +1044,7 @@ fun AddMedicalRecordDialog(
                         enabled = title.isNotBlank(),
                         modifier = Modifier.testTag("submit_record_button")
                     ) {
-                        Text("Uložiť Záznam")
+                        Text(if (recordToEdit != null) "Uložiť Zmeny" else "Uložiť Záznam")
                     }
                 }
             }
@@ -1752,6 +1755,7 @@ fun AboutAppDialog(
     onEnterKeyClick: (() -> Unit)? = null
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
     val licenseStatus = remember { com.example.data.local.LicenseManager.getLicenseStatus(context) }
 
     Dialog(onDismissRequest = onDismiss) {
@@ -1942,6 +1946,89 @@ fun AboutAppDialog(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.45f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.35f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        horizontalAlignment = Alignment.Start
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Favorite,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Podporte OZ Bláznivý zverinec",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Pomôžte zvieratkám v núdzi dobrovoľným príspevkom na činnosť združenia.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = MaterialTheme.colorScheme.surface,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable {
+                                    clipboardManager.setText(androidx.compose.ui.text.AnnotatedString("SK1809000000005127806127"))
+                                    android.widget.Toast.makeText(context, "IBAN bol skopírovaný do schránky", android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .padding(horizontal = 12.dp, vertical = 10.dp)
+                                    .fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "IBAN (ťuknite pre skopírovanie)",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 11.sp
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "SK18 0900 0000 0051 2780 6127",
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                                        ),
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Icon(
+                                    imageVector = Icons.Default.ContentCopy,
+                                    contentDescription = "Kopírovať IBAN",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
                     }
                 }

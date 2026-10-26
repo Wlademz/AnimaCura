@@ -47,6 +47,9 @@ interface MedicalRecordDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRecord(record: MedicalRecord): Long
 
+    @Update
+    suspend fun updateRecord(record: MedicalRecord)
+
     @Delete
     suspend fun deleteRecord(record: MedicalRecord)
 

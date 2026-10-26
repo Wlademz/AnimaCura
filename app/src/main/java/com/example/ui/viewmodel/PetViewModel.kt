@@ -242,6 +242,48 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun updateMedicalRecord(
+        recordId: Long,
+        type: String,
+        title: String,
+        date: String,
+        clinic: String,
+        diagnosis: String,
+        cost: Double,
+        notes: String,
+        nextDueDate: String
+    ) {
+        val currentPetId = _selectedPetId.value ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.updateRecord(
+                MedicalRecord(
+                    id = recordId,
+                    petId = currentPetId,
+                    type = type,
+                    title = title,
+                    date = date,
+                    vetClinic = clinic,
+                    diagnosis = diagnosis,
+                    costEur = cost,
+                    notes = notes,
+                    nextDueDate = nextDueDate
+                )
+            )
+            if (nextDueDate.isNotBlank()) {
+                repository.insertReminder(
+                    Reminder(
+                        petId = currentPetId,
+                        title = "Termín: $title",
+                        type = if (type.contains("Očkovanie")) "Očkovanie" else if (type.contains("Odčervenie")) "Odčervenie" else "Kontrola u veta",
+                        dueDate = nextDueDate,
+                        dueTime = "09:00",
+                        notes = "Kontrolná návšteva / preočkovanie"
+                    )
+                )
+            }
+        }
+    }
+
     fun deleteMedicalRecord(record: MedicalRecord) {
         viewModelScope.launch(Dispatchers.IO) {
             repository.deleteRecord(record)

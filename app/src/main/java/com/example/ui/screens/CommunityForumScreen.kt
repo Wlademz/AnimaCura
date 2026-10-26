@@ -103,7 +103,8 @@ fun CommunityForumScreen(
                     Icon(
                         imageVector = Icons.Default.Forum,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
                 Spacer(modifier = Modifier.width(10.dp))
@@ -116,7 +117,7 @@ fun CommunityForumScreen(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = "Skúsenosti majiteľov a tipy k liečbe",
+                        text = "Tipy, otázky a skúsenosti",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -128,8 +129,10 @@ fun CommunityForumScreen(
             Button(
                 onClick = onNewPostClick,
                 shape = RoundedCornerShape(12.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                modifier = Modifier.testTag("new_post_button")
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                modifier = Modifier
+                    .height(38.dp)
+                    .testTag("new_post_button")
             ) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
@@ -137,6 +140,7 @@ fun CommunityForumScreen(
                     text = "Pridať",
                     fontSize = 12.sp,
                     maxLines = 1,
+                    softWrap = false,
                     fontWeight = FontWeight.SemiBold
                 )
             }
