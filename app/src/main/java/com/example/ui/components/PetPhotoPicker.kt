@@ -1,9 +1,13 @@
 package com.example.ui.components
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -38,6 +42,11 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import java.io.File
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -149,16 +158,81 @@ fun PetPhotoPickerDialog(
 ) {
     val context = LocalContext.current
 
-    // Camera launcher
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicturePreview()
-    ) { bitmap: Bitmap? ->
-        if (bitmap != null) {
-            val path = ImageStorageHelper.saveBitmapToInternalStorage(context, bitmap, prefix = "pet_${petName.lowercase()}")
+    var tempPhotoFile by remember { mutableStateOf<File?>(null) }
+
+    // Full-resolution camera capture launcher using FileProvider
+    val fullPictureLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success: Boolean ->
+        if (success && tempPhotoFile != null && tempPhotoFile!!.exists() && tempPhotoFile!!.length() > 0) {
+            val path = ImageStorageHelper.saveCapturedFileToInternalStorage(
+                context,
+                tempPhotoFile!!,
+                prefix = "pet_${petName.lowercase()}"
+            )
             if (path != null) {
                 onPhotoSelected(path)
                 onDismiss()
             }
+        }
+    }
+
+    // Fallback thumbnail camera launcher (TakePicturePreview)
+    val previewCameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap: Bitmap? ->
+        if (bitmap != null) {
+            val path = ImageStorageHelper.saveBitmapToInternalStorage(
+                context,
+                bitmap,
+                prefix = "pet_${petName.lowercase()}"
+            )
+            if (path != null) {
+                onPhotoSelected(path)
+                onDismiss()
+            }
+        }
+    }
+
+    val launchCameraInternal: () -> Unit = {
+        try {
+            val tempPair = ImageStorageHelper.createTempCameraImageUri(
+                context,
+                prefix = "pet_${petName.lowercase()}"
+            )
+            if (tempPair != null) {
+                tempPhotoFile = tempPair.first
+                fullPictureLauncher.launch(tempPair.second)
+            } else {
+                previewCameraLauncher.launch(null)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            try {
+                previewCameraLauncher.launch(null)
+            } catch (e2: Exception) {
+                e2.printStackTrace()
+                Toast.makeText(
+                    context,
+                    "Nepodarilo sa otvoriť fotoaparát. Môžete vybrať fotku z úložiska.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+    }
+
+    // Runtime permission request launcher for Camera
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            launchCameraInternal()
+        } else {
+            Toast.makeText(
+                context,
+                "Pre odfotenie zvieratka je potrebné povoliť prístup k fotoaparátu v nastaveniach.",
+                Toast.LENGTH_LONG
+            ).show()
         }
     }
 
@@ -232,7 +306,15 @@ fun PetPhotoPickerDialog(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(16.dp))
                         .clickable {
-                            cameraLauncher.launch(null)
+                            val permissionCheck = ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.CAMERA
+                            )
+                            if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
+                                launchCameraInternal()
+                            } else {
+                                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                            }
                         }
                         .testTag("take_photo_camera_button")
                 ) {

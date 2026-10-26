@@ -1,11 +1,14 @@
 package com.example.ui.components
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -111,7 +114,24 @@ fun BarcodeScannerDialog(
         }
     }
 
-    // Gallery launcher
+    val launchCameraSafe: () -> Unit = {
+        try {
+            cameraLauncher.launch(null)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(context, "Nepodarilo sa spustiť fotoaparát. Skúste vybrať fotku z galérie.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            launchCameraSafe()
+        } else {
+            Toast.makeText(context, "Pre skenovanie čiarového kódu povoľte fotoaparát v nastaveniach.", Toast.LENGTH_SHORT).show()
+        }
+    }
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -208,7 +228,14 @@ fun BarcodeScannerDialog(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Button(
-                        onClick = { cameraLauncher.launch(null) },
+                        onClick = {
+                            val permissionCheck = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
+                            if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
+                                launchCameraSafe()
+                            } else {
+                                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                            }
+                        },
                         modifier = Modifier
                             .weight(1f)
                             .testTag("scan_camera_button"),
