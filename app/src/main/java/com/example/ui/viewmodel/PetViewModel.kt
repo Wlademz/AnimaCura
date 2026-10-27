@@ -57,6 +57,9 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     private val _selectedPostId = MutableStateFlow<Long?>(null)
     val selectedPostId: StateFlow<Long?> = _selectedPostId.asStateFlow()
     val postComments: StateFlow<List<ForumComment>>
+    val allForumComments: StateFlow<List<ForumComment>>
+    private val _isRefreshingForum = MutableStateFlow(false)
+    val isRefreshingForum: StateFlow<Boolean> = _isRefreshingForum.asStateFlow()
 
     // Search and filter states
     val clinicSearchQuery = MutableStateFlow("")
@@ -124,6 +127,14 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         postComments = _selectedPostId.flatMapLatest { postId ->
             if (postId != null) repository.getCommentsForPost(postId) else flowOf(emptyList())
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+        allForumComments = repository.allComments.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            emptyList()
+        )
+
+        refreshForum()
     }
 
     fun selectPet(petId: Long) {
@@ -416,8 +427,11 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // PHOTO OPERATIONS
-    fun addPhoto(title: String, category: String, date: String, description: String) {
-        val currentPetId = _selectedPetId.value ?: return
+    fun addPhoto(title: String, category: String, date: String, description: String, imageUri: String = "") {
+        val currentPetId = _selectedPetId.value ?: allPets.value.firstOrNull()?.id ?: 1L
+        if (_selectedPetId.value == null) {
+            _selectedPetId.value = currentPetId
+        }
         viewModelScope.launch(Dispatchers.IO) {
             repository.insertPhoto(
                 PetPhoto(
@@ -426,6 +440,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                     category = category,
                     date = date,
                     description = description,
+                    imageUri = imageUri,
                     drawableResName = "pet_med_icon_1787650018098"
                 )
             )
@@ -482,6 +497,20 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
             val post = forumPosts.value.find { it.id == postId }
             if (post != null) {
                 repository.updatePost(post.copy(commentsCount = post.commentsCount + 1))
+            }
+        }
+    }
+
+    fun refreshForum() {
+        viewModelScope.launch(Dispatchers.IO) {
+            _isRefreshingForum.value = true
+            try {
+                repository.refreshForumDiscussions()
+                kotlinx.coroutines.delay(350)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                _isRefreshingForum.value = false
             }
         }
     }

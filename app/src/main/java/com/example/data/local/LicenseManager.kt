@@ -29,19 +29,19 @@ enum class LicenseTier(
         title = "Rodina VIP (do 5 zvierat)",
         maxPets = 5,
         priceEur = "4,99 €",
-        billingCycle = "jednorazovo / ročne",
+        billingCycle = "na 3 mesiace (pri každom update)",
         badge = "RODINA",
-        description = "Pre domácnosti a milovníkov zvierat s viacerými miláčikmi (do 5 zvierat).",
-        googlePlayProductId = "petmed_vip_family"
+        description = "Štvrťročné predplatné pre domácnosti s viacerými miláčikmi (do 5 zvierat). Platí sa každé 3 mesiace pri aktualizácii cez Google Play.",
+        googlePlayProductId = "petmed_sub_family_3m"
     ),
     BREEDER_PRO(
         title = "Chovateľ PRO (do 15 zvierat)",
         maxPets = 15,
         priceEur = "14,99 €",
-        billingCycle = "jednorazovo / ročne",
+        billingCycle = "na 3 mesiace (pri každom update)",
         badge = "PRO",
-        description = "Pre chovateľské stanice a chovateľov s viacerými vrhmi a chovnými jedincami (do 15 zvierat).",
-        googlePlayProductId = "petmed_pro_breeder"
+        description = "Štvrťročné predplatné pre chovateľské stanice a chovateľov s viacerými vrhmi (do 15 zvierat). Platí sa každé 3 mesiace pri aktualizácii cez Google Play.",
+        googlePlayProductId = "petmed_sub_pro_3m"
     ),
     ORGANIZATION(
         title = "Útulok & Karanténna stanica",

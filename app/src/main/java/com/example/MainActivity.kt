@@ -124,6 +124,8 @@ fun MainAppContent(viewModel: PetViewModel) {
     val forumPosts by viewModel.forumPosts.collectAsStateWithLifecycle()
     val selectedPostId by viewModel.selectedPostId.collectAsStateWithLifecycle()
     val postComments by viewModel.postComments.collectAsStateWithLifecycle()
+    val allForumComments by viewModel.allForumComments.collectAsStateWithLifecycle()
+    val isRefreshingForum by viewModel.isRefreshingForum.collectAsStateWithLifecycle()
     val expenses by viewModel.expenses.collectAsStateWithLifecycle()
 
     var currentNavIndex by remember { mutableIntStateOf(0) }
@@ -335,8 +337,10 @@ fun MainAppContent(viewModel: PetViewModel) {
 
                 4 -> CommunityForumScreen(
                     posts = forumPosts,
+                    allComments = allForumComments,
                     selectedPostId = selectedPostId,
-                    postComments = postComments,
+                    isRefreshing = isRefreshingForum,
+                    onRefresh = { viewModel.refreshForum() },
                     onSelectPost = { viewModel.selectPost(it) },
                     onLikePost = { viewModel.toggleLikePost(it) },
                     onAddComment = { postId, comment, author ->
@@ -510,8 +514,8 @@ fun MainAppContent(viewModel: PetViewModel) {
     if (showAddPhotoDialog) {
         AddPhotoDialog(
             onDismiss = { showAddPhotoDialog = false },
-            onConfirm = { title, category, date, description ->
-                viewModel.addPhoto(title, category, date, description)
+            onConfirm = { title, category, date, description, imageUri ->
+                viewModel.addPhoto(title, category, date, description, imageUri)
                 showAddPhotoDialog = false
             }
         )

@@ -155,6 +155,15 @@ interface ForumDao {
     @Query("SELECT * FROM forum_comments WHERE postId = :postId ORDER BY id ASC")
     fun getCommentsForPost(postId: Long): Flow<List<ForumComment>>
 
+    @Query("SELECT * FROM forum_comments ORDER BY id ASC")
+    fun getAllComments(): Flow<List<ForumComment>>
+
+    @Query("SELECT COUNT(*) FROM forum_posts")
+    suspend fun getPostsCount(): Int
+
+    @Query("SELECT COUNT(*) FROM forum_comments")
+    suspend fun getCommentsCount(): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertComment(comment: ForumComment): Long
 

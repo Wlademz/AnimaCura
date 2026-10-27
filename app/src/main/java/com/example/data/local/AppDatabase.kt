@@ -41,7 +41,7 @@ import kotlinx.coroutines.launch
         ForumComment::class,
         Expense::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -59,6 +59,12 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
+        val MIGRATION_4_5 = object : androidx.room.migration.Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE pet_photos ADD COLUMN imageUri TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         fun getDatabase(context: Context, scope: CoroutineScope): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -66,6 +72,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "pet_health_database"
                 )
+                .addMigrations(MIGRATION_4_5)
                 .fallbackToDestructiveMigration()
                 .addCallback(DatabaseCallback(scope))
                 .build()
@@ -82,6 +89,15 @@ abstract class AppDatabase : RoomDatabase() {
                 INSTANCE?.let { database ->
                     scope.launch(Dispatchers.IO) {
                         populateInitialData(database)
+                    }
+                }
+            }
+
+            override fun onOpen(db: SupportSQLiteDatabase) {
+                super.onOpen(db)
+                INSTANCE?.let { database ->
+                    scope.launch(Dispatchers.IO) {
+                        ensureForumDiscussions(database)
                     }
                 }
             }
@@ -675,6 +691,132 @@ abstract class AppDatabase : RoomDatabase() {
                     notes = "Klinika PrimaVet"
                 )
             )
+
+            ensureForumDiscussions(db)
+        }
+
+        suspend fun ensureForumDiscussions(db: AppDatabase) {
+            val forumDao = db.forumDao()
+            val postsCount = forumDao.getPostsCount()
+            val commentsCount = forumDao.getCommentsCount()
+
+            if (postsCount == 0) {
+                val defaultPosts = listOf(
+                    ForumPost(
+                        id = 1,
+                        authorName = "Peter & Max",
+                        petTypeTag = "Liečba & Lieky",
+                        title = "Skúsenosti s Apoquelom vs Cytopoint injekciami pri atopii psa",
+                        content = "Náš labrador sa na jar a v lete strašne škriabe okolo uší a labiek. Berieme Apoquel 16mg, ktorý zaberá rýchlo, ale vet nám navrhol vyskúšať Cytopoint injekciu raz mesačne. Máte s tým niekto dlhodobejšie skúsenosti? Ako to znášajú?",
+                        dateStr = "Pred 2 dňami",
+                        likesCount = 14,
+                        commentsCount = 3
+                    ),
+                    ForumPost(
+                        id = 2,
+                        authorName = "Lucia - Mačací raj",
+                        petTypeTag = "Výživa",
+                        title = "Ako naučiť mačku piť viac vody pri prevencii močových kameňov?",
+                        content = "Dobrý deň, kastrovaný kocúrik mal nález struvitov v moči. Lekár nám odporučil zvýšiť príjem tekutín a močovú diétu. Kúpili sme keramickú fontánku a pridávame teplú vodu do konzervy. Aké máte ďalšie overené triky?",
+                        dateStr = "Včera o 14:20",
+                        likesCount = 22,
+                        commentsCount = 3
+                    ),
+                    ForumPost(
+                        id = 3,
+                        authorName = "MVDr. Andrea (Poradňa)",
+                        petTypeTag = "Očkovanie",
+                        title = "Prečo nestačí registrovať len besnotu? Dôležitosť DHPPi a L4",
+                        content = "Mnoho majiteľov si myslí, že ak má pes zo zákona besnotu, je plne chránený. Leptospiróza z kaluží či parvoviróza sú však u mladých aj starších psov mimoriadne nebezpečné. Nezabúdajte na každoročné preočkovanie kombinovanej vakcíny!",
+                        dateStr = "Pred 4 dňami",
+                        likesCount = 38,
+                        commentsCount = 3
+                    ),
+                    ForumPost(
+                        id = 4,
+                        authorName = "Zuzana & Blesk",
+                        petTypeTag = "Liečba & Lieky",
+                        title = "Prvá pomoc: Čo robiť pri podozrení na požitie horkej čokolády alebo hrozna?",
+                        content = "Dnes sa nám stala nepríjemná vec – pes stiahol zo stola 70% horkú čokoládu na varenie. Hneď sme volali na pohotovosť, vyvolali zvracanie peroxidom 3% a dali živočíšne uhlie. Zdieľam pre ostatných, teobromín je extrémne nebezpečný!",
+                        dateStr = "Dnes o 09:15",
+                        likesCount = 45,
+                        commentsCount = 2
+                    )
+                )
+                forumDao.insertPosts(defaultPosts)
+            }
+
+            if (commentsCount == 0) {
+                val defaultComments = listOf(
+                    ForumComment(
+                        postId = 1,
+                        authorName = "Veronika K.",
+                        content = "My sme prešli na Cytopoint pred rokom a je to úľava! Žiadne ranné pchanie tabletiek do šunky a účinok drží cca 5-6 týždňov bez vedľajších účinkov.",
+                        dateStr = "Pred 1 dňom"
+                    ),
+                    ForumComment(
+                        postId = 1,
+                        authorName = "Tomas_vet",
+                        content = "Cytopoint sú monoklonálne protilátky špecifické na IL-31, nezaťažujú pečeň tak ako imunosupresíva, určite stojí za vyskúšanie.",
+                        dateStr = "Pred 20 hodinami"
+                    ),
+                    ForumComment(
+                        postId = 1,
+                        authorName = "MVDr. Horváth",
+                        content = "Odporúčam začať injekciou v období najvyššej peľovej záťaže. Pes sa prestane škriabať do 24 hodín a pokožka má čas zregenerovať.",
+                        dateStr = "Pred 8 hodinami"
+                    ),
+                    ForumComment(
+                        postId = 2,
+                        authorName = "Monika & Mimi",
+                        content = "U nás zabral vývar z kuracieho mäska (bez soli a korenín) zamrazený do kociek ľadu! Hodím kocku do misky s vodou a kocúr to s radosťou vylíže.",
+                        dateStr = "Pred 12 hodinami"
+                    ),
+                    ForumComment(
+                        postId = 2,
+                        authorName = "MVDr. Andrea (Poradňa)",
+                        content = "Výborná je aj mokrá strava s pridanou lyžicou vlažnej vody do každej porcie a rozmiestnenie misiek s vodou mimo misky s jedlom.",
+                        dateStr = "Pred 6 hodinami"
+                    ),
+                    ForumComment(
+                        postId = 2,
+                        authorName = "Katka & Leo",
+                        content = "Nám pomohla fontánka s filtrom z aktívneho uhlia, mačky neznášajú stojatú vodu pri stene, chcú čerstvú a tečúcu.",
+                        dateStr = "Pred 3 hodinami"
+                    ),
+                    ForumComment(
+                        postId = 3,
+                        authorName = "Peter K.",
+                        content = "Presne tak, náš známy takto prišiel o ročného nemeckého ovčiaka kvôli leptospiróze, ktorú chytil pri jazere. Očkovanie naozaj nepodceňujte.",
+                        dateStr = "Pred 3 dňami"
+                    ),
+                    ForumComment(
+                        postId = 3,
+                        authorName = "MVDr. Martin",
+                        content = "Navyše Leptospiróza je zoonóza – prenosná aj na ľudí, takže očkovaním chránite seba aj celú svoju rodinu.",
+                        dateStr = "Pred 2 dňami"
+                    ),
+                    ForumComment(
+                        postId = 3,
+                        authorName = "Lenka & Bella",
+                        content = "My dávame každoročne Nobivac DHPPi + L4 a fenka to zvláda bez akejkoľvek reakcie alebo únavy.",
+                        dateStr = "Pred 1 dňom"
+                    ),
+                    ForumComment(
+                        postId = 4,
+                        authorName = "MVDr. Pohotovosť",
+                        content = "Skvelá a rýchla reakcia! Vždy pamätajte: pri vyvolávaní zvracania 3% peroxidom max 1-2 ml na kg a iba ak pes nezjedol ostré predmety a je pri vedomí do 2 hodín od požitia.",
+                        dateStr = "Dnes o 10:30"
+                    ),
+                    ForumComment(
+                        postId = 4,
+                        authorName = "Andrea M.",
+                        content = "Ďakujem za pripomenutie, čokoládu na pečenie hneď odkladám do hornej skrinky mimo dosahu!",
+                        dateStr = "Dnes o 11:00"
+                    )
+                )
+                forumDao.insertComments(defaultComments)
+            }
         }
     }
 }

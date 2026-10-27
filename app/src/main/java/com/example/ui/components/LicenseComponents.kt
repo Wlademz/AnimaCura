@@ -320,12 +320,12 @@ fun PricingTiersDialog(
                 )
             },
             title = {
-                Text("Potvrdiť nákup cez Google Play")
+                Text("Objednávka balíka ${tier.title}")
             },
             text = {
                 Column {
                     Text(
-                        text = "Položka: ${tier.title}",
+                        text = "Balík: ${tier.title}",
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.bodyLarge
                     )
@@ -337,7 +337,7 @@ fun PricingTiersDialog(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Platba bude spracovaná bezpečne prostredníctvom Vášho účtu Google Play.",
+                        text = "Predplatné a platba prebiehajú cez oficiálnu platobnú bránu Google Play. Licencia sa aktivuje až po úspešnom dokončení a potvrdení platby.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -346,14 +346,30 @@ fun PricingTiersDialog(
             confirmButton = {
                 Button(
                     onClick = {
-                        LicenseManager.purchaseTierViaGooglePlay(context, tier)
-                        Toast.makeText(context, "✓ Platba cez Google Play úspešná! Balík ${tier.title} aktivovaný.", Toast.LENGTH_LONG).show()
+                        try {
+                            val intent = android.content.Intent(
+                                android.content.Intent.ACTION_VIEW,
+                                android.net.Uri.parse("https://play.google.com/store/apps/details?id=${context.packageName}")
+                            ).apply {
+                                setPackage("com.android.vending")
+                            }
+                            context.startActivity(intent)
+                        } catch (_: Exception) {
+                            try {
+                                val intent = android.content.Intent(
+                                    android.content.Intent.ACTION_VIEW,
+                                    android.net.Uri.parse("https://play.google.com/store/apps/details?id=${context.packageName}")
+                                )
+                                context.startActivity(intent)
+                            } catch (_: Exception) {
+                                Toast.makeText(context, "Google Play Store nie je k dispozícii", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        Toast.makeText(context, "Presmerovanie do Google Play... Licencia sa aktivuje po dokončení platby.", Toast.LENGTH_LONG).show()
                         selectedTierForConfirm = null
-                        onActivated()
-                        onDismiss()
                     }
                 ) {
-                    Text("Zaplatiť ${tier.priceEur}")
+                    Text("Otvoriť Google Play (${tier.priceEur})")
                 }
             },
             dismissButton = {
@@ -393,7 +409,7 @@ fun PricingTiersDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Cenník & Licencie Google Play",
+                            text = "Cenník & Licencie",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -443,7 +459,7 @@ fun PricingTiersDialog(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 Text(
-                    text = "Vyberte si balík cez Google Play podľa počtu zvierat vo Vašej starostlivosti:",
+                    text = "Vyberte si balík podľa počtu zvierat vo Vašej starostlivosti:",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Start,
@@ -649,7 +665,7 @@ private fun TierCard(
                 ) {
                     Icon(imageVector = Icons.Default.ShoppingCart, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Kúpiť cez Google Play (${tier.priceEur})", fontSize = 12.sp)
+                    Text("Kúpiť (${tier.priceEur})", fontSize = 12.sp)
                 }
             }
         }

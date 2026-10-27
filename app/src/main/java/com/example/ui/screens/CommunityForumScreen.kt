@@ -27,10 +27,12 @@ import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,6 +41,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,14 +62,19 @@ import com.example.ui.theme.EmergencyRed
 @Composable
 fun CommunityForumScreen(
     posts: List<ForumPost>,
+    allComments: List<ForumComment>,
     selectedPostId: Long?,
-    postComments: List<ForumComment>,
+    isRefreshing: Boolean,
+    onRefresh: () -> Unit,
     onSelectPost: (Long?) -> Unit,
     onLikePost: (ForumPost) -> Unit,
     onAddComment: (Long, String, String) -> Unit,
     onNewPostClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    LaunchedEffect(Unit) {
+        onRefresh()
+    }
     val tags = listOf("Všetky", "Liečba & Lieky", "Výživa", "Očkovanie", "Správanie", "Všeobecné")
     var selectedTag by remember { mutableStateOf("Všetky") }
 
@@ -126,23 +134,45 @@ fun CommunityForumScreen(
                 }
             }
 
-            Button(
-                onClick = onNewPostClick,
-                shape = RoundedCornerShape(12.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                modifier = Modifier
-                    .height(38.dp)
-                    .testTag("new_post_button")
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
+                    onClick = onRefresh,
+                    modifier = Modifier.size(38.dp)
+                ) {
+                    if (isRefreshing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Obnoviť diskusie",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "Pridať",
-                    fontSize = 12.sp,
-                    maxLines = 1,
-                    softWrap = false,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Button(
+                    onClick = onNewPostClick,
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                    modifier = Modifier
+                        .height(38.dp)
+                        .testTag("new_post_button")
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Pridať",
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        softWrap = false,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
         }
 
@@ -180,10 +210,11 @@ fun CommunityForumScreen(
             ) {
                 items(filteredPosts, key = { it.id }) { post ->
                     val isExpanded = selectedPostId == post.id
+                    val commentsForThisPost = allComments.filter { it.postId == post.id }
                     ForumPostCard(
-                        post = post,
+                        post = post.copy(commentsCount = if (commentsForThisPost.isNotEmpty()) commentsForThisPost.size else post.commentsCount),
                         isExpanded = isExpanded,
-                        comments = if (isExpanded) postComments else emptyList(),
+                        comments = commentsForThisPost,
                         onToggleExpand = {
                             if (isExpanded) onSelectPost(null) else onSelectPost(post.id)
                         },

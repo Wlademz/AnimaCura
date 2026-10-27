@@ -92,6 +92,7 @@ data class PetPhoto(
     val category: String, // Hojenie rany, Zuby / Ústna dutina, Kožný nález, Lekárska správa / Recept, Portrét
     val date: String,
     val description: String = "",
+    val imageUri: String = "",
     val drawableResName: String = "pet_med_icon_1787650018098"
 )
 

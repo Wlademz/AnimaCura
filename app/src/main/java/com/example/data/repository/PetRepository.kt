@@ -66,10 +66,12 @@ class PetRepository(private val database: AppDatabase) {
 
     // Forum
     val allPosts: Flow<List<ForumPost>> = database.forumDao().getAllPosts()
+    val allComments: Flow<List<ForumComment>> = database.forumDao().getAllComments()
     fun getCommentsForPost(postId: Long): Flow<List<ForumComment>> = database.forumDao().getCommentsForPost(postId)
     suspend fun insertPost(post: ForumPost): Long = database.forumDao().insertPost(post)
     suspend fun updatePost(post: ForumPost) = database.forumDao().updatePost(post)
     suspend fun insertComment(comment: ForumComment): Long = database.forumDao().insertComment(comment)
+    suspend fun refreshForumDiscussions() = AppDatabase.ensureForumDiscussions(database)
 
     // Expenses
     fun getExpensesForPet(petId: Long): Flow<List<Expense>> = database.expenseDao().getExpensesForPet(petId)
