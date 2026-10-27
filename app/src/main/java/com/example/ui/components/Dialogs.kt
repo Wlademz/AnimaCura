@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
@@ -30,6 +31,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -95,7 +97,8 @@ fun AddPetDialog(
     var selectedSpecies by remember { mutableStateOf("Pes") }
     var breed by remember { mutableStateOf("") }
     var birthDate by remember { mutableStateOf("") }
-    var gender by remember { mutableStateOf("Samec") }
+    var selectedGenderBase by remember { mutableStateOf("Samec") }
+    var isNeutered by remember { mutableStateOf(false) }
     var chip by remember { mutableStateOf("") }
     var passport by remember { mutableStateOf("") }
     var vetName by remember { mutableStateOf("") }
@@ -172,7 +175,7 @@ fun AddPetDialog(
                             species = selectedSpecies,
                             breed = breed,
                             birthDate = birthDate,
-                            gender = gender,
+                            gender = if (isNeutered) { if (selectedGenderBase == "Samica") "Samica (kastrovaná)" else "Samec (kastrovaný)" } else selectedGenderBase,
                             avatarColorHex = selectedColor,
                             imageUri = imageUri
                         ),
@@ -249,14 +252,34 @@ fun AddPetDialog(
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf("Samec", "Samica", "Kastrovaný").forEach { g ->
-                        FilterChip(
-                            selected = gender == g,
-                            onClick = { gender = g },
-                            label = { Text(g) }
-                        )
-                    }
+                Text(
+                    text = "Pohlavie a kastrácia:",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FilterChip(
+                        selected = selectedGenderBase == "Samec",
+                        onClick = { selectedGenderBase = "Samec" },
+                        label = { Text("Samec") }
+                    )
+                    FilterChip(
+                        selected = selectedGenderBase == "Samica",
+                        onClick = { selectedGenderBase = "Samica" },
+                        label = { Text("Samica") }
+                    )
+                    FilterChip(
+                        selected = isNeutered,
+                        onClick = { isNeutered = !isNeutered },
+                        label = { Text(if (selectedGenderBase == "Samica") "Kastrovaná" else "Kastrovaný") },
+                        leadingIcon = if (isNeutered) {
+                            { Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                        } else null
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -388,12 +411,17 @@ fun AddPetDialog(
                     Button(
                         onClick = {
                             if (name.isNotBlank()) {
+                                val finalGender = if (isNeutered) {
+                                    if (selectedGenderBase == "Samica") "Samica (kastrovaná)" else "Samec (kastrovaný)"
+                                } else {
+                                    selectedGenderBase
+                                }
                                 onConfirm(
                                     name.trim(),
                                     selectedSpecies,
                                     breed.trim(),
                                     birthDate.trim(),
-                                    gender,
+                                    finalGender,
                                     chip.trim(),
                                     passport.trim(),
                                     vetName.trim(),
@@ -432,7 +460,12 @@ fun EditPetDialog(
     var selectedSpecies by remember { mutableStateOf(pet.species) }
     var breed by remember { mutableStateOf(pet.breed) }
     var birthDate by remember { mutableStateOf(pet.birthDate) }
-    var gender by remember { mutableStateOf(pet.gender) }
+    var selectedGenderBase by remember {
+        mutableStateOf(if (pet.gender.contains("Samica", ignoreCase = true)) "Samica" else "Samec")
+    }
+    var isNeutered by remember {
+        mutableStateOf(pet.gender.contains("kastrovan", ignoreCase = true))
+    }
     var chip by remember { mutableStateOf(pet.chipNumber) }
     var passport by remember { mutableStateOf(pet.passportNumber) }
     var vetName by remember { mutableStateOf(pet.vetName) }
@@ -592,14 +625,34 @@ fun EditPetDialog(
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf("Samec", "Samica", "Samec (kastrovaný)", "Samica (kastrovaná)").forEach { g ->
-                        FilterChip(
-                            selected = gender == g,
-                            onClick = { gender = g },
-                            label = { Text(g) }
-                        )
-                    }
+                Text(
+                    text = "Pohlavie a kastrácia:",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FilterChip(
+                        selected = selectedGenderBase == "Samec",
+                        onClick = { selectedGenderBase = "Samec" },
+                        label = { Text("Samec") }
+                    )
+                    FilterChip(
+                        selected = selectedGenderBase == "Samica",
+                        onClick = { selectedGenderBase = "Samica" },
+                        label = { Text("Samica") }
+                    )
+                    FilterChip(
+                        selected = isNeutered,
+                        onClick = { isNeutered = !isNeutered },
+                        label = { Text(if (selectedGenderBase == "Samica") "Kastrovaná" else "Kastrovaný") },
+                        leadingIcon = if (isNeutered) {
+                            { Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                        } else null
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -777,13 +830,18 @@ fun EditPetDialog(
                     Button(
                         onClick = {
                             if (name.isNotBlank()) {
+                                val finalGender = if (isNeutered) {
+                                    if (selectedGenderBase == "Samica") "Samica (kastrovaná)" else "Samec (kastrovaný)"
+                                } else {
+                                    selectedGenderBase
+                                }
                                 onConfirm(
                                     pet.copy(
                                         name = name.trim(),
                                         species = selectedSpecies,
                                         breed = breed.trim(),
                                         birthDate = birthDate.trim(),
-                                        gender = gender,
+                                        gender = finalGender,
                                         chipNumber = chip.trim(),
                                         passportNumber = passport.trim(),
                                         vetName = vetName.trim(),
@@ -1756,16 +1814,12 @@ fun AddForumPostDialog(
 @Composable
 fun AboutAppDialog(
     onDismiss: () -> Unit,
-    onEnterKeyClick: (() -> Unit)? = null
+    onEnterKeyClick: (() -> Unit)? = null,
+    onShowPricingClick: (() -> Unit)? = null
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
     val licenseStatus = remember { com.example.data.local.LicenseManager.getLicenseStatus(context) }
-    val updateManager = remember { com.example.util.InAppUpdateManager(context) }
-    val cadenceInfo = remember { updateManager.getCadenceInfo() }
-    var isCheckingUpdate by remember { mutableStateOf(false) }
-    var updateStatusMessage by remember { mutableStateOf<String?>(null) }
-    var isUpdateDownloaded by remember { mutableStateOf(false) }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -1851,14 +1905,14 @@ fun AboutAppDialog(
                             )
                             if (licenseStatus.isActivated) {
                                 Text(
-                                    text = "✓ Plná VIP verzia",
+                                    text = "✓ ${licenseStatus.tier.title}",
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary
                                 )
                             } else {
                                 Text(
-                                    text = "Skúšobná (${licenseStatus.daysRemaining} dní)",
+                                    text = "Kapacita: ${licenseStatus.maxPets} zvieratá",
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.secondary
@@ -1870,9 +1924,9 @@ fun AboutAppDialog(
 
                         Text(
                             text = if (licenseStatus.isActivated) {
-                                "Aplikácia je plne aktivovaná trvalým licenčným kľúčom."
+                                "Licencia: ${licenseStatus.tier.title} (kapacita: ${if (licenseStatus.maxPets > 500) "Neobmedzene" else "${licenseStatus.maxPets} zvierat"})."
                             } else {
-                                "7-dňová bezplatná skúšobná lehota. Zostáva: ${licenseStatus.daysRemaining} dní."
+                                "Bezplatná verzia s limitom do 2 zvieratiek. Zostáva skúšobnej doby: ${licenseStatus.daysRemaining} dní."
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1881,13 +1935,27 @@ fun AboutAppDialog(
                         Spacer(modifier = Modifier.height(6.dp))
 
                         Text(
-                            text = "ID: ${licenseStatus.deviceId}",
+                            text = "ID zariadenia: ${licenseStatus.deviceId}",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
-                        if (!licenseStatus.isActivated && onEnterKeyClick != null) {
+                        if (onShowPricingClick != null) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Button(
+                                onClick = {
+                                    onDismiss()
+                                    onShowPricingClick()
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Icon(imageVector = Icons.Default.Star, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Cenník & Rozšírenie kapacity", fontSize = 12.sp)
+                            }
+                        } else if (!licenseStatus.isActivated && onEnterKeyClick != null) {
                             Spacer(modifier = Modifier.height(10.dp))
                             OutlinedButton(
                                 onClick = {
@@ -1898,174 +1966,6 @@ fun AboutAppDialog(
                                 shape = RoundedCornerShape(8.dp)
                             ) {
                                 Text("Zadať aktivačný kód", fontSize = 12.sp)
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // In-App Updates & 3-month cadence card
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = if (cadenceInfo.isCadenceDue) {
-                        MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.35f)
-                    } else {
-                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(14.dp),
-                        horizontalAlignment = Alignment.Start
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.SystemUpdate,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "Aktualizácie & Vydania",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            if (cadenceInfo.isCadenceDue) {
-                                Surface(
-                                    color = MaterialTheme.colorScheme.errorContainer,
-                                    shape = RoundedCornerShape(6.dp)
-                                ) {
-                                    Text(
-                                        text = "3-mesačný termín",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onErrorContainer,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                    )
-                                }
-                            } else {
-                                Surface(
-                                    color = MaterialTheme.colorScheme.primaryContainer,
-                                    shape = RoundedCornerShape(6.dp)
-                                ) {
-                                    Text(
-                                        text = "Aktuálna",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        Text(
-                            text = cadenceInfo.message,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-
-                        if (updateStatusMessage != null) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = MaterialTheme.colorScheme.surface,
-                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    text = updateStatusMessage!!,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(8.dp)
-                                )
-                            }
-                        }
-
-                        if (isUpdateDownloaded) {
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Button(
-                                onClick = { updateManager.completeUpdate() },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Text("Reštartovať a nainštalovať", fontSize = 12.sp)
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedButton(
-                                onClick = {
-                                    isCheckingUpdate = true
-                                    updateStatusMessage = null
-                                    val activity = context as? android.app.Activity
-                                    updateManager.checkForUpdate(
-                                        onUpdateAvailable = { appUpdateInfo ->
-                                            isCheckingUpdate = false
-                                            updateStatusMessage = "K dispozícii je nová verzia (kód: ${appUpdateInfo.availableVersionCode()})!"
-                                            if (activity != null) {
-                                                updateManager.startFlexibleUpdate(activity, appUpdateInfo) {
-                                                    isUpdateDownloaded = true
-                                                    updateStatusMessage = "Nová verzia je pripravená na inštaláciu."
-                                                }
-                                            }
-                                        },
-                                        onNoUpdate = {
-                                            isCheckingUpdate = false
-                                            updateStatusMessage = "Máte nainštalovanú najnovšiu dostupnú verziu."
-                                        },
-                                        onError = {
-                                            isCheckingUpdate = false
-                                            updateStatusMessage = "Aplikácia je aktuálna (alebo beží v teste)."
-                                        }
-                                    )
-                                },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(8.dp),
-                                enabled = !isCheckingUpdate
-                            ) {
-                                if (isCheckingUpdate) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(14.dp),
-                                        strokeWidth = 2.dp
-                                    )
-                                } else {
-                                    Text("Overiť Play Store", fontSize = 11.sp, maxLines = 1)
-                                }
-                            }
-
-                            OutlinedButton(
-                                onClick = {
-                                    updateManager.addReminderToCalendar(context)
-                                    android.widget.Toast.makeText(context, "Pripomienka na 3 mesiace bola otvorená v kalendári", android.widget.Toast.LENGTH_SHORT).show()
-                                },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.CalendarMonth,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Pripomienka", fontSize = 11.sp, maxLines = 1)
                             }
                         }
                     }

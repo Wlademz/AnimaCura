@@ -69,6 +69,7 @@ import com.example.ui.components.EditPetDialog
 import com.example.ui.components.EnterLicenseKeyDialog
 import com.example.ui.components.ExportVetDialog
 import com.example.ui.components.LicenseExpiredLockScreen
+import com.example.ui.components.PricingTiersDialog
 import com.example.ui.components.PetPhotoPickerDialog
 import com.example.ui.components.PetQrSyncDialog
 import com.example.ui.components.PetTopSelectorBar
@@ -103,16 +104,16 @@ fun MainAppContent(viewModel: PetViewModel) {
     var licenseRefreshCounter by remember { mutableIntStateOf(0) }
     val licenseStatus = remember(licenseRefreshCounter) { LicenseManager.getLicenseStatus(context) }
 
-    // If 7-day trial is expired and application is not activated with a valid key, lock the app
-    if (licenseStatus.isExpired && !licenseStatus.isActivated) {
+    val pets by viewModel.allPets.collectAsStateWithLifecycle()
+
+    // If 7-day trial is expired and application is not activated with a valid key, lock the app only if user has > 2 pets
+    if (licenseStatus.isExpired && !licenseStatus.isActivated && pets.size > 2) {
         LicenseExpiredLockScreen(
             licenseStatus = licenseStatus,
             onActivated = { licenseRefreshCounter++ }
         )
         return
     }
-
-    val pets by viewModel.allPets.collectAsStateWithLifecycle()
     val selectedPet by viewModel.selectedPet.collectAsStateWithLifecycle()
     val medicalRecords by viewModel.medicalRecords.collectAsStateWithLifecycle()
     val medications by viewModel.medications.collectAsStateWithLifecycle()
@@ -146,6 +147,7 @@ fun MainAppContent(viewModel: PetViewModel) {
     var showAddForumPostDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     var showEnterKeyDialog by remember { mutableStateOf(false) }
+    var showPricingDialog by remember { mutableStateOf(false) }
     var petForPhotoChange by remember { mutableStateOf<Pet?>(null) }
     var showPetPhotoDialog by remember { mutableStateOf(false) }
 
@@ -187,7 +189,13 @@ fun MainAppContent(viewModel: PetViewModel) {
                 pets = pets,
                 selectedPet = selectedPet,
                 onSelectPet = { viewModel.selectPet(it) },
-                onAddPetClick = { showAddPetDialog = true },
+                onAddPetClick = {
+                    if (LicenseManager.canAddPet(context, pets.size)) {
+                        showAddPetDialog = true
+                    } else {
+                        showPricingDialog = true
+                    }
+                },
                 onEditPetClick = { pet ->
                     petToEditOrDelete = pet
                     showEditPetDialog = true
@@ -545,7 +553,8 @@ fun MainAppContent(viewModel: PetViewModel) {
     if (showAboutDialog) {
         AboutAppDialog(
             onDismiss = { showAboutDialog = false },
-            onEnterKeyClick = { showEnterKeyDialog = true }
+            onEnterKeyClick = { showEnterKeyDialog = true },
+            onShowPricingClick = { showPricingDialog = true }
         )
     }
 
@@ -579,6 +588,15 @@ fun MainAppContent(viewModel: PetViewModel) {
         EnterLicenseKeyDialog(
             licenseStatus = licenseStatus,
             onDismiss = { showEnterKeyDialog = false },
+            onActivated = { licenseRefreshCounter++ }
+        )
+    }
+
+    if (showPricingDialog) {
+        PricingTiersDialog(
+            licenseStatus = licenseStatus,
+            currentPetCount = pets.size,
+            onDismiss = { showPricingDialog = false },
             onActivated = { licenseRefreshCounter++ }
         )
     }
