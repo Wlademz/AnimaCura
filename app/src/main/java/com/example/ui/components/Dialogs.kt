@@ -81,6 +81,7 @@ import com.example.data.local.VeterinaryDrugDatabase
 import com.example.data.local.entity.MedicalRecord
 import com.example.data.local.entity.Medication
 import com.example.data.local.entity.Pet
+import com.example.data.local.entity.PetPhoto
 import com.example.data.local.entity.WeightLog
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -1716,17 +1717,31 @@ fun AddWeightDialog(
 
 @Composable
 fun AddPhotoDialog(
+    photoToEdit: PetPhoto? = null,
     onDismiss: () -> Unit,
     onConfirm: (title: String, category: String, date: String, description: String, imageUri: String) -> Unit
 ) {
-    var title by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    var title by remember { mutableStateOf(photoToEdit?.title ?: "") }
     val categories = listOf("Hojenie rany", "Zuby / Ústna dutina", "Kožný nález", "Lekárska správa / Recept", "Portrét")
-    var selectedCategory by remember { mutableStateOf(categories[0]) }
+    var selectedCategory by remember { mutableStateOf(photoToEdit?.category ?: categories[0]) }
     val currentDateStr = remember { SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date()) }
-    var date by remember { mutableStateOf(currentDateStr) }
-    var description by remember { mutableStateOf("") }
-    var selectedImageUri by remember { mutableStateOf("") }
+    var date by remember { mutableStateOf(photoToEdit?.date ?: currentDateStr) }
+    var description by remember { mutableStateOf(photoToEdit?.description ?: "") }
+    var selectedImageUri by remember { mutableStateOf(photoToEdit?.imageUri ?: "") }
     var showPhotoPicker by remember { mutableStateOf(false) }
+
+    val documentPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val originalName = ImageStorageHelper.getFileName(context, uri)
+            val saved = ImageStorageHelper.saveAttachmentToInternalStorage(context, uri, originalName)
+            if (saved != null) {
+                selectedImageUri = saved.first
+            }
+        }
+    }
 
     if (showPhotoPicker) {
         PetPhotoPickerDialog(
@@ -1749,13 +1764,16 @@ fun AddPhotoDialog(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector = Icons.Default.AddPhotoAlternate,
+                    imageVector = if (photoToEdit != null) Icons.Default.Edit else Icons.Default.AddPhotoAlternate,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Pridať Zdravotnú Fotografiu", fontWeight = FontWeight.Bold)
+                Text(
+                    text = if (photoToEdit != null) "Upraviť Zdravotný Záznam" else "Pridať Zdravotnú Fotografiu",
+                    fontWeight = FontWeight.Bold
+                )
             }
         },
         text = {
@@ -1766,17 +1784,19 @@ fun AddPhotoDialog(
                     label = { Text("Názov / Predmet foto *") },
                     placeholder = { Text("napr. Kontrola šitia, Stav ucha po kvapkách") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().testTag("photo_title_input")
                 )
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Photo Picker Section
+                // Photo or Attachment Picker Section
                 Text(
-                    text = "Fotografia dokumentácie:",
+                    text = "Fotografia alebo príloha (PDF / správa):",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(6.dp))
+
+                val isPdf = selectedImageUri.endsWith(".pdf", ignoreCase = true)
 
                 if (selectedImageUri.isNotBlank()) {
                     Surface(
@@ -1789,22 +1809,60 @@ fun AddPhotoDialog(
                             modifier = Modifier.padding(10.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(selectedImageUri)
-                                    .crossfade(true)
-                                    .build(),
-                                contentDescription = "Zvolená fotografia",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(150.dp)
-                                    .clip(RoundedCornerShape(10.dp))
-                            )
+                            if (isPdf) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp, horizontal = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.PictureAsPdf,
+                                        contentDescription = "PDF dokument",
+                                        tint = Color(0xFFDC2626),
+                                        modifier = Modifier.size(36.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = selectedImageUri.substringAfterLast("/"),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1
+                                        )
+                                        Text(
+                                            text = "PDF lekárska správa / dokument",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = { ImageStorageHelper.openAttachment(context, selectedImageUri) },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Visibility,
+                                            contentDescription = "Zobraziť PDF",
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            } else {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(selectedImageUri)
+                                        .crossfade(true)
+                                        .build(),
+                                    contentDescription = "Zvolená fotografia",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(150.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                )
+                            }
                             Spacer(modifier = Modifier.height(8.dp))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 OutlinedButton(
                                     onClick = { showPhotoPicker = true },
@@ -1813,55 +1871,90 @@ fun AddPhotoDialog(
                                 ) {
                                     Icon(Icons.Default.PhotoCamera, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Zmeniť foto", fontSize = 11.sp)
+                                    Text("Zmeniť foto", fontSize = 11.sp, maxLines = 1)
                                 }
-                                Spacer(modifier = Modifier.width(8.dp))
                                 OutlinedButton(
-                                    onClick = { selectedImageUri = "" },
-                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                                    shape = RoundedCornerShape(8.dp)
+                                    onClick = {
+                                        documentPickerLauncher.launch(arrayOf("application/pdf", "image/*"))
+                                    },
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.weight(1f)
                                 ) {
-                                    Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Odstrániť", fontSize = 11.sp)
+                                    Text("PDF / Súbor", fontSize = 11.sp, maxLines = 1)
+                                }
+                                IconButton(
+                                    onClick = { selectedImageUri = "" },
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = "Odstrániť prílohu",
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(18.dp)
+                                    )
                                 }
                             }
                         }
                     }
                 } else {
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { showPhotoPicker = true }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(14.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
+                                .weight(1f)
+                                .clickable { showPhotoPicker = true }
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.AddPhotoAlternate,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(26.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
+                            Column(
+                                modifier = Modifier.padding(12.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.AddPhotoAlternate,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Odfotiť alebo vybrať z galérie",
-                                    style = MaterialTheme.typography.titleSmall,
+                                    text = "Odfotiť / Foto",
+                                    style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary
                                 )
+                            }
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.35f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f)),
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { documentPickerLauncher.launch(arrayOf("application/pdf", "image/*")) }
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(12.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PictureAsPdf,
+                                    contentDescription = null,
+                                    tint = Color(0xFFDC2626),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Fotoaparát alebo úložisko telefónu",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    text = "PDF / Správa",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }
@@ -1894,7 +1987,7 @@ fun AddPhotoDialog(
                     onValueChange = { date = it },
                     label = { Text("Dátum") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().testTag("photo_date_input")
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 OutlinedTextField(
@@ -1902,7 +1995,7 @@ fun AddPhotoDialog(
                     onValueChange = { description = it },
                     label = { Text("Popis stavu, príznaky, poznámky") },
                     minLines = 2,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().testTag("photo_description_input")
                 )
             }
         },
@@ -1913,9 +2006,10 @@ fun AddPhotoDialog(
                         onConfirm(title.trim(), selectedCategory, date.trim(), description.trim(), selectedImageUri)
                     }
                 },
-                enabled = title.isNotBlank()
+                enabled = title.isNotBlank(),
+                modifier = Modifier.testTag("save_photo_button")
             ) {
-                Text("Pridať do Galérie")
+                Text(if (photoToEdit != null) "Uložiť zmeny" else "Pridať do Galérie")
             }
         },
         dismissButton = {

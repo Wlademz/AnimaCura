@@ -513,6 +513,27 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun updatePhoto(
+        photo: PetPhoto,
+        title: String,
+        category: String,
+        date: String,
+        description: String,
+        imageUri: String
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.updatePhoto(
+                photo.copy(
+                    title = title,
+                    category = category,
+                    date = date,
+                    description = description,
+                    imageUri = imageUri
+                )
+            )
+        }
+    }
+
     fun deletePhoto(photo: PetPhoto) {
         viewModelScope.launch(Dispatchers.IO) {
             repository.deletePhoto(photo)

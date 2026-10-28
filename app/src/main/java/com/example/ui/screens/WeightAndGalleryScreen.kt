@@ -28,13 +28,16 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.util.ImageStorageHelper
 import androidx.compose.material.icons.outlined.TrendingDown
 import androidx.compose.material.icons.outlined.TrendingUp
 import androidx.compose.material3.Button
@@ -78,6 +81,7 @@ fun WeightAndGalleryScreen(
     photos: List<PetPhoto>,
     onAddWeightClick: () -> Unit,
     onAddPhotoClick: () -> Unit,
+    onEditPhoto: (PetPhoto) -> Unit,
     onDeleteWeightLog: (WeightLog) -> Unit,
     onDeletePhoto: (PetPhoto) -> Unit,
     modifier: Modifier = Modifier
@@ -355,6 +359,7 @@ fun WeightAndGalleryScreen(
                             items(filteredPhotos, key = { it.id }) { photo ->
                                 PhotoItemCard(
                                     photo = photo,
+                                    onEdit = { onEditPhoto(photo) },
                                     onDelete = { onDeletePhoto(photo) }
                                 )
                             }
@@ -369,11 +374,14 @@ fun WeightAndGalleryScreen(
 @Composable
 fun PhotoItemCard(
     photo: PetPhoto,
+    onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val context = LocalContext.current
     var showFullScreenImage by remember { mutableStateOf(false) }
+    val isPdf = photo.imageUri.endsWith(".pdf", ignoreCase = true)
 
-    if (showFullScreenImage && photo.imageUri.isNotBlank()) {
+    if (showFullScreenImage && photo.imageUri.isNotBlank() && !isPdf) {
         Dialog(onDismissRequest = { showFullScreenImage = false }) {
             Surface(
                 shape = RoundedCornerShape(20.dp),
@@ -438,7 +446,9 @@ fun PhotoItemCard(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onEdit() }
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(
@@ -463,11 +473,28 @@ fun PhotoItemCard(
                     Text(
                         text = photo.date,
                         style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    IconButton(
+                        onClick = onEdit,
+                        modifier = Modifier
+                            .testTag("edit_photo_${photo.id}")
+                            .size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Upraviť záznam",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                     IconButton(
                         onClick = onDelete,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier
+                            .testTag("delete_photo_${photo.id}")
+                            .size(28.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
@@ -481,48 +508,91 @@ fun PhotoItemCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Photo / Image representation
+            // Photo or PDF representation
             if (photo.imageUri.isNotBlank()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(180.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { showFullScreenImage = true }
-                ) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(photo.imageUri)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = photo.title,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
+                if (isPdf) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFDC2626).copy(alpha = 0.1f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFDC2626).copy(alpha = 0.25f)),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { ImageStorageHelper.openAttachment(context, photo.imageUri) }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PictureAsPdf,
+                                contentDescription = "PDF správa",
+                                tint = Color(0xFFDC2626),
+                                modifier = Modifier.size(36.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = photo.title,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Lekárska správa / PDF (kliknutím otvoríte)",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Button(
+                                onClick = { ImageStorageHelper.openAttachment(context, photo.imageUri) },
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                            ) {
+                                Text("Otvoriť", fontSize = 11.sp)
+                            }
+                        }
+                    }
+                } else {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .align(Alignment.BottomCenter)
-                            .background(Color.Black.copy(alpha = 0.55f))
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                            .height(180.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { showFullScreenImage = true }
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(photo.imageUri)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = photo.title,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.BottomCenter)
+                                .background(Color.Black.copy(alpha = 0.55f))
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
                         ) {
-                            Text(
-                                text = photo.title,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                            Text(
-                                text = "Zväčšiť",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color.White.copy(alpha = 0.8f),
-                                fontSize = 10.sp
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = photo.title,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                Text(
+                                    text = "Zväčšiť",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.White.copy(alpha = 0.8f),
+                                    fontSize = 10.sp
+                                )
+                            }
                         }
                     }
                 }
@@ -532,7 +602,7 @@ fun PhotoItemCard(
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(110.dp)
+                        .height(100.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {

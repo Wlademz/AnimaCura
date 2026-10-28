@@ -122,6 +122,9 @@ interface PetPhotoDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPhoto(photo: PetPhoto): Long
 
+    @Update
+    suspend fun updatePhoto(photo: PetPhoto)
+
     @Delete
     suspend fun deletePhoto(photo: PetPhoto)
 

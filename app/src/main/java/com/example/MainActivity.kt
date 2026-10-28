@@ -62,6 +62,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.local.LicenseManager
 import com.example.data.local.entity.MedicalRecord
 import com.example.data.local.entity.Pet
+import com.example.data.local.entity.PetPhoto
 import com.example.ui.components.AboutAppDialog
 import com.example.ui.components.AddForumPostDialog
 import com.example.ui.components.AddMedicalRecordDialog
@@ -152,6 +153,7 @@ fun MainAppContent(viewModel: PetViewModel) {
     var drugToAssign by remember { mutableStateOf<com.example.data.local.VeterinaryDrug?>(null) }
     var showAddWeightDialog by remember { mutableStateOf(false) }
     var showAddPhotoDialog by remember { mutableStateOf(false) }
+    var photoToEdit by remember { mutableStateOf<PetPhoto?>(null) }
     var showAddReminderDialog by remember { mutableStateOf(false) }
     var showExportDialog by remember { mutableStateOf(false) }
     var showAddForumPostDialog by remember { mutableStateOf(false) }
@@ -360,6 +362,7 @@ fun MainAppContent(viewModel: PetViewModel) {
                     photos = photos,
                     onAddWeightClick = { showAddWeightDialog = true },
                     onAddPhotoClick = { showAddPhotoDialog = true },
+                    onEditPhoto = { photo -> photoToEdit = photo },
                     onDeleteWeightLog = { viewModel.deleteWeightLog(it) },
                     onDeletePhoto = { viewModel.deletePhoto(it) }
                 )
@@ -559,10 +562,22 @@ fun MainAppContent(viewModel: PetViewModel) {
 
     if (showAddPhotoDialog) {
         AddPhotoDialog(
+            photoToEdit = null,
             onDismiss = { showAddPhotoDialog = false },
             onConfirm = { title, category, date, description, imageUri ->
                 viewModel.addPhoto(title, category, date, description, imageUri)
                 showAddPhotoDialog = false
+            }
+        )
+    }
+
+    if (photoToEdit != null) {
+        AddPhotoDialog(
+            photoToEdit = photoToEdit,
+            onDismiss = { photoToEdit = null },
+            onConfirm = { title, category, date, description, imageUri ->
+                viewModel.updatePhoto(photoToEdit!!, title, category, date, description, imageUri)
+                photoToEdit = null
             }
         )
     }

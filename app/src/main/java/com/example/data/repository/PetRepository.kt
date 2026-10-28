@@ -58,6 +58,7 @@ class PetRepository(private val database: AppDatabase) {
     // Photos
     fun getPhotosForPet(petId: Long): Flow<List<PetPhoto>> = database.petPhotoDao().getPhotosForPet(petId)
     suspend fun insertPhoto(photo: PetPhoto): Long = database.petPhotoDao().insertPhoto(photo)
+    suspend fun updatePhoto(photo: PetPhoto) = database.petPhotoDao().updatePhoto(photo)
     suspend fun deletePhoto(photo: PetPhoto) = database.petPhotoDao().deletePhoto(photo)
 
     // Vet Clinics
