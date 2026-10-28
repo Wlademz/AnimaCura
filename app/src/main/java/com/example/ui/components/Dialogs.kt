@@ -19,17 +19,27 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material3.Switch
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.util.ImageStorageHelper
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
@@ -927,9 +937,13 @@ fun AddMedicalRecordDialog(
         diagnosis: String,
         cost: Double,
         notes: String,
-        nextDueDate: String
+        nextDueDate: String,
+        photoUri: String,
+        attachmentUri: String,
+        attachmentName: String
     ) -> Unit
 ) {
+    val context = LocalContext.current
     val types = listOf(
         "Očkovanie",
         "Vyšetrenie",
@@ -951,6 +965,39 @@ fun AddMedicalRecordDialog(
     var cost by remember { mutableStateOf(if (recordToEdit != null && recordToEdit.costEur > 0) recordToEdit.costEur.toString() else "") }
     var notes by remember { mutableStateOf(recordToEdit?.notes ?: "") }
     var nextDueDate by remember { mutableStateOf(recordToEdit?.nextDueDate ?: "") }
+    var photoUri by remember { mutableStateOf(recordToEdit?.photoUri ?: "") }
+    var attachmentUri by remember { mutableStateOf(recordToEdit?.attachmentUri ?: "") }
+    var attachmentName by remember { mutableStateOf(recordToEdit?.attachmentName ?: "") }
+    var showPhotoPicker by remember { mutableStateOf(false) }
+
+    val documentPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val originalName = ImageStorageHelper.getFileName(context, uri)
+            val saved = ImageStorageHelper.saveAttachmentToInternalStorage(context, uri, originalName)
+            if (saved != null) {
+                attachmentUri = saved.first
+                attachmentName = saved.second
+            }
+        }
+    }
+
+    if (showPhotoPicker) {
+        PetPhotoPickerDialog(
+            petName = title.ifBlank { "Lekársky záznam" },
+            currentImageUri = photoUri,
+            onDismiss = { showPhotoPicker = false },
+            onPhotoSelected = { path ->
+                photoUri = path
+                showPhotoPicker = false
+            },
+            onPhotoRemoved = {
+                photoUri = ""
+                showPhotoPicker = false
+            }
+        )
+    }
 
     val titlePlaceholder = when (selectedType) {
         "Operácia / Zákrok" -> "napr. Kastrácia, Šitie rany, Odstránenie cysty"
@@ -1073,7 +1120,7 @@ fun AddMedicalRecordDialog(
                     value = nextDueDate,
                     onValueChange = { nextDueDate = it },
                     label = { Text("Najbližší termín / Preočkovanie (DD.MM.RRRR)") },
-                    placeholder = { Text("Automaticky vytvorí pripomienku") },
+                    placeholder = { Text("Automaticky vytvorí a naplánuje pripomienku") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -1086,6 +1133,187 @@ fun AddMedicalRecordDialog(
                     minLines = 2,
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                Spacer(modifier = Modifier.height(14.dp))
+                Text(
+                    text = "Prílohy a Fotodokumentácia:",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // FOTOGRAFIA ZÁZNAMU
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.PhotoCamera,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Fotografia / Snímka nálezu",
+                                    fontWeight = FontWeight.SemiBold,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                            if (photoUri.isNotBlank()) {
+                                IconButton(
+                                    onClick = { photoUri = "" },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Odstrániť fotku",
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        if (photoUri.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(context)
+                                        .data(if (photoUri.startsWith("/")) java.io.File(photoUri) else photoUri)
+                                        .crossfade(true)
+                                        .build(),
+                                    contentDescription = "Fotka záznamu",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .size(64.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable { showPhotoPicker = true }
+                                )
+                                Column {
+                                    Text(
+                                        text = "Fotografia je priložená",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Text(
+                                        text = "Ťuknite sem pre zmenu snímky",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.clickable { showPhotoPicker = true }
+                                    )
+                                }
+                            }
+                        } else {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            OutlinedButton(
+                                onClick = { showPhotoPicker = true },
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(Icons.Default.AddPhotoAlternate, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Odfotiť alebo vybrať snímku", style = MaterialTheme.typography.labelMedium)
+                            }
+                        }
+                    }
+                }
+
+                // DOKUMENT / PDF PRÍLOHA
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Description,
+                                    contentDescription = null,
+                                    tint = Color(0xFFDC2626),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Príloha (PDF / Lekárska správa)",
+                                    fontWeight = FontWeight.SemiBold,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                            if (attachmentUri.isNotBlank()) {
+                                IconButton(
+                                    onClick = {
+                                        attachmentUri = ""
+                                        attachmentName = ""
+                                    },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Odstrániť prílohu",
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        if (attachmentUri.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "📄 ${attachmentName.ifBlank { "Lekárska správa" }}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Medium,
+                                    maxLines = 1,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                OutlinedButton(
+                                    onClick = { ImageStorageHelper.openAttachment(context, attachmentUri) },
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text("Otvoriť", style = MaterialTheme.typography.labelSmall)
+                                }
+                            }
+                        } else {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            OutlinedButton(
+                                onClick = {
+                                    documentPickerLauncher.launch(
+                                        arrayOf("application/pdf", "image/*", "*/*")
+                                    )
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Vybrať PDF alebo dokument z mobilu", style = MaterialTheme.typography.labelMedium)
+                            }
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(20.dp))
 
@@ -1106,7 +1334,10 @@ fun AddMedicalRecordDialog(
                                     diagnosis.trim(),
                                     cost.toDoubleOrNull() ?: 0.0,
                                     notes.trim(),
-                                    nextDueDate.trim()
+                                    nextDueDate.trim(),
+                                    photoUri,
+                                    attachmentUri,
+                                    attachmentName
                                 )
                             }
                         },
@@ -1134,7 +1365,9 @@ fun AddMedicationDialog(
         endDate: String,
         totalDoses: Int,
         timingNotes: String,
-        prescribingVet: String
+        prescribingVet: String,
+        reminderTime: String,
+        enableReminder: Boolean
     ) -> Unit
 ) {
     var name by remember { mutableStateOf(initialDrug?.name ?: "") }
@@ -1153,6 +1386,8 @@ fun AddMedicationDialog(
     var totalDoses by remember { mutableStateOf(if (initialDrug != null) "10" else "20") }
     var timingNotes by remember { mutableStateOf(initialDrug?.administrationMethod ?: "Po kŕmení") }
     var prescribingVet by remember { mutableStateOf("") }
+    var enableReminder by remember { mutableStateOf(true) }
+    var reminderTime by remember { mutableStateOf("08:00") }
 
     val quickDrugs = remember {
         listOf("Bravecto", "NexGard", "Apoquel", "Simparica", "Milpro", "Clavaseptin", "Meloxidyl", "Vetmedin", "Surolan", "Alaptid")
@@ -1326,6 +1561,59 @@ fun AddMedicationDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // ZVUKOVÁ NOTIFIKÁCIA V MOBILE
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.NotificationsActive,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Upozornenie v telefóne",
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                            Switch(
+                                checked = enableReminder,
+                                onCheckedChange = { enableReminder = it }
+                            )
+                        }
+                        if (enableReminder) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedTextField(
+                                value = reminderTime,
+                                onValueChange = { reminderTime = it },
+                                label = { Text("Čas notifikácie (HH:mm)") },
+                                placeholder = { Text("napr. 08:00") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "🔔 Telefón vás v tomto čase zvukovo upozorní na podanie dávky.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Row(
@@ -1346,7 +1634,9 @@ fun AddMedicationDialog(
                                     endDate.trim(),
                                     totalDoses.toIntOrNull() ?: 20,
                                     timingNotes.trim(),
-                                    prescribingVet.trim()
+                                    prescribingVet.trim(),
+                                    reminderTime.trim(),
+                                    enableReminder
                                 )
                             }
                         },

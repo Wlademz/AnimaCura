@@ -220,7 +220,10 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         diagnosis: String,
         cost: Double,
         notes: String,
-        nextDueDate: String
+        nextDueDate: String,
+        photoUri: String = "",
+        attachmentUri: String = "",
+        attachmentName: String = ""
     ) {
         val currentPetId = _selectedPetId.value ?: return
         viewModelScope.launch(Dispatchers.IO) {
@@ -234,20 +237,33 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                     diagnosis = diagnosis,
                     costEur = cost,
                     notes = notes,
-                    nextDueDate = nextDueDate
+                    nextDueDate = nextDueDate,
+                    photoUri = photoUri,
+                    attachmentUri = attachmentUri,
+                    attachmentName = attachmentName
                 )
             )
-            // If next due date is provided, create automatic reminder
+            // If next due date is provided, create automatic reminder and schedule it
             if (nextDueDate.isNotBlank()) {
-                repository.insertReminder(
+                val petName = selectedPet.value?.name ?: "Zvieratko"
+                val reminderType = if (type.contains("Očkovanie")) "Očkovanie" else if (type.contains("Odčervenie")) "Odčervenie" else "Kontrola u veta"
+                val remId = repository.insertReminder(
                     Reminder(
                         petId = currentPetId,
                         title = "Termín: $title",
-                        type = if (type.contains("Očkovanie")) "Očkovanie" else if (type.contains("Odčervenie")) "Odčervenie" else "Kontrola u veta",
+                        type = reminderType,
                         dueDate = nextDueDate,
                         dueTime = "09:00",
-                        notes = "Kontrolná návšteva / preočkovanie"
+                        notes = "Kontrolná návšteva / preočkovanie ($clinic)"
                     )
+                )
+                val trigger = NotificationHelper.parseTriggerMillis(nextDueDate, "09:00")
+                NotificationHelper.scheduleReminder(
+                    context = getApplication(),
+                    reminderId = remId,
+                    title = "🐾 PetMed ($petName): $title",
+                    message = "Plánovaný termín: $reminderType ($nextDueDate o 09:00)",
+                    triggerAtMillis = trigger
                 )
             }
         }
@@ -262,7 +278,10 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         diagnosis: String,
         cost: Double,
         notes: String,
-        nextDueDate: String
+        nextDueDate: String,
+        photoUri: String = "",
+        attachmentUri: String = "",
+        attachmentName: String = ""
     ) {
         val currentPetId = _selectedPetId.value ?: return
         viewModelScope.launch(Dispatchers.IO) {
@@ -277,19 +296,32 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                     diagnosis = diagnosis,
                     costEur = cost,
                     notes = notes,
-                    nextDueDate = nextDueDate
+                    nextDueDate = nextDueDate,
+                    photoUri = photoUri,
+                    attachmentUri = attachmentUri,
+                    attachmentName = attachmentName
                 )
             )
             if (nextDueDate.isNotBlank()) {
-                repository.insertReminder(
+                val petName = selectedPet.value?.name ?: "Zvieratko"
+                val reminderType = if (type.contains("Očkovanie")) "Očkovanie" else if (type.contains("Odčervenie")) "Odčervenie" else "Kontrola u veta"
+                val remId = repository.insertReminder(
                     Reminder(
                         petId = currentPetId,
                         title = "Termín: $title",
-                        type = if (type.contains("Očkovanie")) "Očkovanie" else if (type.contains("Odčervenie")) "Odčervenie" else "Kontrola u veta",
+                        type = reminderType,
                         dueDate = nextDueDate,
                         dueTime = "09:00",
-                        notes = "Kontrolná návšteva / preočkovanie"
+                        notes = "Kontrolná návšteva / preočkovanie ($clinic)"
                     )
+                )
+                val trigger = NotificationHelper.parseTriggerMillis(nextDueDate, "09:00")
+                NotificationHelper.scheduleReminder(
+                    context = getApplication(),
+                    reminderId = remId,
+                    title = "🐾 PetMed ($petName): $title",
+                    message = "Plánovaný termín: $reminderType ($nextDueDate o 09:00)",
+                    triggerAtMillis = trigger
                 )
             }
         }
@@ -311,7 +343,9 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         endDate: String,
         totalDoses: Int,
         timingNotes: String,
-        prescribingVet: String
+        prescribingVet: String,
+        reminderTime: String = "08:00",
+        enableReminder: Boolean = true
     ) {
         val currentPetId = _selectedPetId.value ?: return
         viewModelScope.launch(Dispatchers.IO) {
@@ -331,17 +365,28 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                     prescribingVet = prescribingVet
                 )
             )
-            // Also create a dosage reminder
-            repository.insertReminder(
-                Reminder(
-                    petId = currentPetId,
-                    title = "Užiť $name ($dosage)",
-                    type = "Dávka lieku",
-                    dueDate = "Dnes",
-                    dueTime = "08:00",
-                    notes = "$frequency - $timingNotes"
+            // If reminder is enabled, create and schedule notification
+            if (enableReminder) {
+                val petName = selectedPet.value?.name ?: "Zvieratko"
+                val remId = repository.insertReminder(
+                    Reminder(
+                        petId = currentPetId,
+                        title = "Užiť $name ($dosage)",
+                        type = "Dávka lieku",
+                        dueDate = startDate.ifBlank { "Dnes" },
+                        dueTime = reminderTime.ifBlank { "08:00" },
+                        notes = "$frequency • $timingNotes"
+                    )
                 )
-            )
+                val trigger = NotificationHelper.parseTriggerMillis(startDate.ifBlank { "Dnes" }, reminderTime.ifBlank { "08:00" })
+                NotificationHelper.scheduleReminder(
+                    context = getApplication(),
+                    reminderId = remId,
+                    title = "💊 Dávka lieku: $name",
+                    message = "Podajte dávku $dosage ($timingNotes) pre $petName",
+                    triggerAtMillis = trigger
+                )
+            }
         }
     }
 
@@ -398,7 +443,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     fun addReminder(title: String, type: String, dueDate: String, dueTime: String, notes: String) {
         val currentPetId = _selectedPetId.value ?: return
         viewModelScope.launch(Dispatchers.IO) {
-            repository.insertReminder(
+            val remId = repository.insertReminder(
                 Reminder(
                     petId = currentPetId,
                     title = title,
@@ -409,20 +454,41 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                     notes = notes
                 )
             )
+            val petName = selectedPet.value?.name ?: "Zvieratko"
+            val trigger = NotificationHelper.parseTriggerMillis(dueDate, dueTime)
+            NotificationHelper.scheduleReminder(
+                context = getApplication(),
+                reminderId = remId,
+                title = "🐾 PetMed ($petName): $title",
+                message = if (notes.isNotBlank()) "$type • $notes" else "$type o $dueTime",
+                triggerAtMillis = trigger
+            )
         }
     }
 
     fun toggleReminderCompleted(reminder: Reminder) {
         viewModelScope.launch(Dispatchers.IO) {
-            repository.updateReminder(
-                reminder.copy(isCompleted = !reminder.isCompleted)
-            )
+            val updated = reminder.copy(isCompleted = !reminder.isCompleted)
+            repository.updateReminder(updated)
+            if (updated.isCompleted) {
+                NotificationHelper.cancelReminder(getApplication(), reminder.id)
+            } else {
+                val trigger = NotificationHelper.parseTriggerMillis(reminder.dueDate, reminder.dueTime)
+                NotificationHelper.scheduleReminder(
+                    context = getApplication(),
+                    reminderId = reminder.id,
+                    title = "🐾 PetMed: ${reminder.title}",
+                    message = "${reminder.type} o ${reminder.dueTime}",
+                    triggerAtMillis = trigger
+                )
+            }
         }
     }
 
     fun deleteReminder(reminder: Reminder) {
         viewModelScope.launch(Dispatchers.IO) {
             repository.deleteReminder(reminder)
+            NotificationHelper.cancelReminder(getApplication(), reminder.id)
         }
     }
 
@@ -749,13 +815,24 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // SYSTEM NOTIFICATION TEST
-    fun scheduleTestNotification() {
+    fun scheduleTestNotification(delaySeconds: Int = 0) {
         val petName = selectedPet.value?.name ?: "Zvieratko"
-        NotificationHelper.showImmediateNotification(
-            context = getApplication(),
-            title = "🐾 PetMed Pripomienka: $petName",
-            message = "Test notifikácie bol úspešný! Pripomienky liekov a očkovaní vás včas upozornia v notifikačnej lište."
-        )
+        if (delaySeconds <= 0) {
+            NotificationHelper.showImmediateNotification(
+                context = getApplication(),
+                title = "🐾 PetMed Pripomienka: $petName",
+                message = "Test notifikácie bol úspešný! Pripomienky liekov a očkovaní vás včas upozornia v notifikačnej lište."
+            )
+        } else {
+            val triggerMillis = System.currentTimeMillis() + (delaySeconds * 1000L)
+            NotificationHelper.scheduleReminder(
+                context = getApplication(),
+                reminderId = 99999L,
+                title = "🐾 PetMed Test Zvonenia: $petName",
+                message = "Plánované upozornenie po $delaySeconds s úspešne zazvonilo! Alarmy a dávkovanie fungujú.",
+                triggerAtMillis = triggerMillis
+            )
+        }
     }
 
     // PRINTABLE PDF HEALTH PASSPORT

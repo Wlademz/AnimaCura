@@ -38,7 +38,10 @@ data class MedicalRecord(
     val diagnosis: String = "",
     val costEur: Double = 0.0,
     val notes: String = "",
-    val nextDueDate: String = "" // Pre vakcíny a opakované kontroly
+    val nextDueDate: String = "", // Pre vakcíny a opakované kontroly
+    val photoUri: String = "",
+    val attachmentUri: String = "",
+    val attachmentName: String = ""
 )
 
 @Entity(tableName = "medications")

@@ -2,4 +2,6 @@
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <cache-path name="camera_photos" path="." />
     <files-path name="pet_images" path="pet_images" />
+    <files-path name="medical_attachments" path="medical_attachments" />
+    <files-path name="internal_files" path="." />
 </paths>

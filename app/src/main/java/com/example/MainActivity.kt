@@ -1,10 +1,16 @@
 package com.example
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +24,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -152,11 +159,22 @@ fun MainAppContent(viewModel: PetViewModel) {
     var showPricingDialog by remember { mutableStateOf(false) }
     var petForPhotoChange by remember { mutableStateOf<Pet?>(null) }
     var showPetPhotoDialog by remember { mutableStateOf(false) }
+    var showTestNotificationDialog by remember { mutableStateOf(false) }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { _ -> }
 
     val inAppUpdateManager = remember { InAppUpdateManager(context) }
     var isUpdateReadyToInstall by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
         val activity = context as? android.app.Activity
         inAppUpdateManager.checkForUpdate(
             onUpdateAvailable = { updateInfo ->
@@ -291,7 +309,13 @@ fun MainAppContent(viewModel: PetViewModel) {
                         onToxicityClick = { currentSecondaryScreen = "toxicity" },
                         onExpensesClick = { currentSecondaryScreen = "expenses" },
                         onPrintPdfClick = { viewModel.printPetMedicalPassport(context) },
-                        onTestNotificationClick = { viewModel.scheduleTestNotification() }
+                        onTestNotificationClick = {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                            showTestNotificationDialog = true
+                        }
                     )
 
                 1 -> MedicalRecordsScreen(
@@ -456,8 +480,8 @@ fun MainAppContent(viewModel: PetViewModel) {
     if (showAddRecordDialog) {
         AddMedicalRecordDialog(
             onDismiss = { showAddRecordDialog = false },
-            onConfirm = { type, title, date, clinic, diagnosis, cost, notes, nextDueDate ->
-                viewModel.addMedicalRecord(type, title, date, clinic, diagnosis, cost, notes, nextDueDate)
+            onConfirm = { type, title, date, clinic, diagnosis, cost, notes, nextDueDate, photoUri, attachmentUri, attachmentName ->
+                viewModel.addMedicalRecord(type, title, date, clinic, diagnosis, cost, notes, nextDueDate, photoUri, attachmentUri, attachmentName)
                 showAddRecordDialog = false
             }
         )
@@ -467,7 +491,7 @@ fun MainAppContent(viewModel: PetViewModel) {
         AddMedicalRecordDialog(
             recordToEdit = recordToEdit,
             onDismiss = { recordToEdit = null },
-            onConfirm = { type, title, date, clinic, diagnosis, cost, notes, nextDueDate ->
+            onConfirm = { type, title, date, clinic, diagnosis, cost, notes, nextDueDate, photoUri, attachmentUri, attachmentName ->
                 viewModel.updateMedicalRecord(
                     recordId = recordToEdit!!.id,
                     type = type,
@@ -477,7 +501,10 @@ fun MainAppContent(viewModel: PetViewModel) {
                     diagnosis = diagnosis,
                     cost = cost,
                     notes = notes,
-                    nextDueDate = nextDueDate
+                    nextDueDate = nextDueDate,
+                    photoUri = photoUri,
+                    attachmentUri = attachmentUri,
+                    attachmentName = attachmentName
                 )
                 recordToEdit = null
             }
@@ -491,9 +518,19 @@ fun MainAppContent(viewModel: PetViewModel) {
                 showAddMedDialog = false
                 drugToAssign = null
             },
-            onConfirm = { name, dosage, frequency, form, startDate, endDate, totalDoses, timingNotes, prescribingVet ->
+            onConfirm = { name, dosage, frequency, form, startDate, endDate, totalDoses, timingNotes, prescribingVet, reminderTime, enableReminder ->
                 viewModel.addMedication(
-                    name, dosage, frequency, form, startDate, endDate, totalDoses, timingNotes, prescribingVet
+                    name = name,
+                    dosage = dosage,
+                    frequency = frequency,
+                    form = form,
+                    startDate = startDate,
+                    endDate = endDate,
+                    totalDoses = totalDoses,
+                    timingNotes = timingNotes,
+                    prescribingVet = prescribingVet,
+                    reminderTime = reminderTime,
+                    enableReminder = enableReminder
                 )
                 showAddMedDialog = false
                 drugToAssign = null
@@ -602,6 +639,51 @@ fun MainAppContent(viewModel: PetViewModel) {
             currentPetCount = pets.size,
             onDismiss = { showPricingDialog = false },
             onActivated = { licenseRefreshCounter++ }
+        )
+    }
+
+    if (showTestNotificationDialog) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showTestNotificationDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Emergency,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            },
+            title = {
+                Text("Skúška Notifikácie & Zvonenia", fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column {
+                    Text(
+                        "Vyberte spôsob otestovania upozornenia:\n\n" +
+                        "• Ihneď: Okamžite odošle testovaciu notifikáciu so zvukom a vibráciou.\n" +
+                        "• O 10 sekúnd: Naplánuje systémový budík / alarm, aby ste stihli zamknúť obrazovku telefónu a overiť reálne zvonenie na pozadí."
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.scheduleTestNotification(delaySeconds = 10)
+                        showTestNotificationDialog = false
+                    }
+                ) {
+                    Text("Otestovať o 10s")
+                }
+            },
+            dismissButton = {
+                OutlinedButton(
+                    onClick = {
+                        viewModel.scheduleTestNotification(delaySeconds = 0)
+                        showTestNotificationDialog = false
+                    }
+                ) {
+                    Text("Ihneď")
+                }
+            }
         )
     }
 }

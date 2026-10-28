@@ -106,4 +106,93 @@ object ImageStorageHelper {
             null
         }
     }
+
+    /**
+     * Resolves the human-readable display name of a file from a content Uri
+     */
+    fun getFileName(context: Context, uri: Uri): String {
+        var name = "dokument"
+        try {
+            val cursor = context.contentResolver.query(uri, null, null, null, null)
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    val nameIndex = it.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                    if (nameIndex != -1) {
+                        val retrieved = it.getString(nameIndex)
+                        if (!retrieved.isNullOrBlank()) {
+                            name = retrieved
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return name
+    }
+
+    /**
+     * Copies any document or file (PDF, image, doc) into internal medical_attachments storage
+     */
+    fun saveAttachmentToInternalStorage(context: Context, uri: Uri, originalName: String?): Pair<String, String>? {
+        return try {
+            val directory = File(context.filesDir, "medical_attachments")
+            if (!directory.exists()) {
+                directory.mkdirs()
+            }
+            val rawName = originalName ?: getFileName(context, uri)
+            val safeName = rawName.replace(Regex("[^a-zA-Z0-9._-]"), "_").ifBlank { "priloha_${System.currentTimeMillis()}" }
+            val targetFile = File(directory, "${System.currentTimeMillis()}_$safeName")
+
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                FileOutputStream(targetFile).use { output ->
+                    input.copyTo(output)
+                    output.flush()
+                }
+            }
+            Pair(targetFile.absolutePath, rawName)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    /**
+     * Opens an attachment (PDF, image, etc.) using the Android system viewer
+     */
+    fun openAttachment(context: Context, pathOrUri: String) {
+        try {
+            val file = File(pathOrUri)
+            val contentUri: Uri = if (file.exists()) {
+                FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.fileprovider",
+                    file
+                )
+            } else {
+                Uri.parse(pathOrUri)
+            }
+
+            val mimeType = when {
+                pathOrUri.endsWith(".pdf", ignoreCase = true) -> "application/pdf"
+                pathOrUri.endsWith(".jpg", ignoreCase = true) || pathOrUri.endsWith(".jpeg", ignoreCase = true) -> "image/jpeg"
+                pathOrUri.endsWith(".png", ignoreCase = true) -> "image/png"
+                else -> context.contentResolver.getType(contentUri) ?: "*/*"
+            }
+
+            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                setDataAndType(contentUri, mimeType)
+                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(android.content.Intent.createChooser(intent, "Otvoriť lekársku správu / prílohu"))
+        } catch (e: Exception) {
+            android.widget.Toast.makeText(
+                context,
+                "Pre zobrazenie tohto súboru je potrebná aplikácia na čítanie PDF alebo prehliadač.",
+                android.widget.Toast.LENGTH_LONG
+            ).show()
+        }
+    }
 }
+
