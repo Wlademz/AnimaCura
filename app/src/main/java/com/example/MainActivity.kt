@@ -31,6 +31,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.util.InAppUpdateManager
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Emergency
@@ -246,7 +247,15 @@ fun MainAppContent(viewModel: PetViewModel) {
                                 contentDescription = item.title
                             )
                         },
-                        label = { Text(item.title, maxLines = 1) },
+                        label = {
+                            Text(
+                                text = item.title,
+                                maxLines = 1,
+                                fontSize = if (item.title.length > 8) 9.sp else 10.sp,
+                                fontWeight = if (currentNavIndex == index && currentSecondaryScreen == null) FontWeight.Bold else FontWeight.Normal,
+                                softWrap = false
+                            )
+                        },
                         modifier = Modifier.testTag(item.testTag)
                     )
                 }

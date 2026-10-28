@@ -56,6 +56,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.local.entity.MedicalRecord
@@ -185,7 +186,7 @@ fun DashboardScreen(
                     QuickToolItem(
                         icon = Icons.Default.QrCodeScanner,
                         title = "Čiarový kód",
-                        subtitle = "Skener liekov & EAN",
+                        subtitle = "Skener liekov",
                         badgeColor = Color(0xFF0D9488),
                         onClick = onScanBarcodeClick,
                         modifier = Modifier.weight(1f)
@@ -193,8 +194,8 @@ fun DashboardScreen(
 
                     QuickToolItem(
                         icon = Icons.Default.QrCode,
-                        title = "QR Sync",
-                        subtitle = "Zdieľať / Import bez písania",
+                        title = "QR Prenos",
+                        subtitle = "Zdieľanie údajov",
                         badgeColor = Color(0xFF6366F1),
                         onClick = onQrSyncClick,
                         modifier = Modifier.weight(1f)
@@ -211,7 +212,7 @@ fun DashboardScreen(
                     QuickToolItem(
                         icon = Icons.Default.Warning,
                         title = "Môže to zjesť?",
-                        subtitle = "Toxicita & Čokoláda",
+                        subtitle = "Toxicita jedla",
                         badgeColor = Color(0xFFEA580C),
                         onClick = onToxicityClick,
                         modifier = Modifier.weight(1f)
@@ -219,8 +220,8 @@ fun DashboardScreen(
 
                     QuickToolItem(
                         icon = Icons.Default.Euro,
-                        title = "Výdavky & Náklady",
-                        subtitle = "Krmivo, veterina, salón",
+                        title = "Výdavky & účty",
+                        subtitle = "Krmivo a veterina",
                         badgeColor = Color(0xFF059669),
                         onClick = onExpensesClick,
                         modifier = Modifier.weight(1f)
@@ -237,7 +238,7 @@ fun DashboardScreen(
                     QuickToolItem(
                         icon = Icons.Default.PictureAsPdf,
                         title = "Tlač do PDF",
-                        subtitle = "Karta pre veterinára s QR",
+                        subtitle = "Karta pre lekára",
                         badgeColor = Color(0xFF0284C7),
                         onClick = onPrintPdfClick,
                         modifier = Modifier.weight(1f)
@@ -246,7 +247,7 @@ fun DashboardScreen(
                     QuickToolItem(
                         icon = Icons.Default.Notifications,
                         title = "Test zvonenia",
-                        subtitle = "Skúška notifikácie v mobile",
+                        subtitle = "Skúška budíka",
                         badgeColor = Color(0xFF8B5CF6),
                         onClick = onTestNotificationClick,
                         modifier = Modifier.weight(1f)
@@ -584,12 +585,12 @@ fun QuickToolItem(
             .clickable { onClick() }
     ) {
         Row(
-            modifier = Modifier.padding(10.dp),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 9.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(34.dp)
+                    .size(28.dp)
                     .clip(CircleShape)
                     .background(badgeColor.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
@@ -598,23 +599,29 @@ fun QuickToolItem(
                     imageVector = icon,
                     contentDescription = null,
                     tint = badgeColor,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(16.dp)
                 )
             }
-            Spacer(modifier = Modifier.width(8.dp))
-            Column {
+            Spacer(modifier = Modifier.width(6.dp))
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
-                    maxLines = 1
+                    fontSize = 11.5.sp,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis
                 )
+                Spacer(modifier = Modifier.height(1.dp))
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
-                    fontSize = 10.sp
+                    fontSize = 9.5.sp,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
