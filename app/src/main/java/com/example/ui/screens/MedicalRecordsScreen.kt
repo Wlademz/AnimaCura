@@ -4,9 +4,11 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -146,16 +148,18 @@ fun MedicalRecordsScreen(
                         Text(
                             text = "Zdravotná História (${medicalRecords.size})",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
                         Button(
                             onClick = onAddRecordClick,
                             shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                             modifier = Modifier.testTag("add_record_screen_button")
                         ) {
                             Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Pridať Záznam", fontSize = 12.sp)
+                            Text("Pridať Záznam", fontSize = 12.sp, maxLines = 1)
                         }
                     }
 
@@ -214,6 +218,7 @@ fun MedicalRecordsScreen(
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(bottom = 100.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             items(filteredRecords, key = { it.id }) { record ->
@@ -239,18 +244,20 @@ fun MedicalRecordsScreen(
                         Text(
                             text = "Evidencia Liekov (${medications.size})",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             Button(
                                 onClick = onAddMedicationClick,
                                 shape = RoundedCornerShape(12.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = PillPurple),
                                 modifier = Modifier.testTag("add_medication_screen_button")
                             ) {
                                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Pridať", fontSize = 12.sp)
+                                Text("Pridať", fontSize = 12.sp, maxLines = 1)
                             }
                         }
                     }
@@ -322,6 +329,7 @@ fun MedicalRecordsScreen(
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(bottom = 100.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             items(medications, key = { it.id }) { med ->
@@ -350,92 +358,98 @@ fun MedicalRecordsScreen(
 
             3 -> {
                 // PHOTO GALLERY & HEALING TRACKER
-                Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = "Zdravotná Fotogaléria (${photos.size})",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "Dokumentácia rán, zubov a lekárskych správ",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Button(
-                            onClick = onAddPhotoClick,
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.testTag("add_photo_screen_button")
+                val filteredPhotos = if (selectedPhotoCategory == "Všetky") {
+                    photos
+                } else {
+                    photos.filter { it.category == selectedPhotoCategory }
+                }
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Header row (scrolls up with the list so cards have more space)
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.AddPhotoAlternate, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Pridať Foto", fontSize = 12.sp)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        photoCategories.forEach { cat ->
-                            FilterChip(
-                                selected = selectedPhotoCategory == cat,
-                                onClick = { selectedPhotoCategory = cat },
-                                label = { Text(cat) }
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    val filteredPhotos = if (selectedPhotoCategory == "Všetky") {
-                        photos
-                    } else {
-                        photos.filter { it.category == selectedPhotoCategory }
-                    }
-
-                    if (filteredPhotos.isEmpty()) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(
-                                    imageVector = Icons.Default.Image,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                    modifier = Modifier.size(48.dp)
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
+                            Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                                 Text(
-                                    text = "Žiadne fotografie v tejto kategórii",
-                                    style = MaterialTheme.typography.bodyMedium,
+                                    text = "Zdravotná Fotogaléria (${photos.size})",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Dokumentácia rán, zubov a lekárskych správ",
+                                    style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
+                            Button(
+                                onClick = onAddPhotoClick,
+                                shape = RoundedCornerShape(12.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                                modifier = Modifier.testTag("add_photo_screen_button")
+                            ) {
+                                Icon(Icons.Default.AddPhotoAlternate, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Pridať Foto", fontSize = 12.sp, maxLines = 1)
+                            }
                         }
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                    }
+
+                    // Category filter chips (scrolls up with the list)
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            items(filteredPhotos, key = { it.id }) { photo ->
-                                PhotoItemCard(
-                                    photo = photo,
-                                    onEdit = { onEditPhotoClick(photo) },
-                                    onDelete = { onDeletePhoto(photo) }
+                            photoCategories.forEach { cat ->
+                                FilterChip(
+                                    selected = selectedPhotoCategory == cat,
+                                    onClick = { selectedPhotoCategory = cat },
+                                    label = { Text(cat) }
                                 )
                             }
+                        }
+                    }
+
+                    if (filteredPhotos.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 48.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(
+                                        imageVector = Icons.Default.Image,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                        modifier = Modifier.size(48.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "Žiadne fotografie v tejto kategórii",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        items(filteredPhotos, key = { it.id }) { photo ->
+                            PhotoItemCard(
+                                photo = photo,
+                                onEdit = { onEditPhotoClick(photo) },
+                                onDelete = { onDeletePhoto(photo) }
+                            )
                         }
                     }
                 }
@@ -446,7 +460,8 @@ fun MedicalRecordsScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(16.dp),
+                        .verticalScroll(rememberScrollState())
+                        .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     ElevatedCard(
