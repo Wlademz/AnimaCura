@@ -78,131 +78,135 @@ fun EmergencyClinicsScreen(
         matchesQuery && matchesEmergency
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Emergency Banner Header
-        ElevatedCard(
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.elevatedCardColors(containerColor = EmergencyRed.copy(alpha = 0.1f)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+        // Emergency Banner Header (scrolls up with list)
+        item {
+            ElevatedCard(
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.elevatedCardColors(containerColor = EmergencyRed.copy(alpha = 0.1f)),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .background(EmergencyRed),
-                    contentAlignment = Alignment.Center
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Emergency,
-                        contentDescription = "Pohotovosť",
-                        tint = Color.White
-                    )
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Veterinárna Pohotovosť",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = EmergencyRed
-                    )
-                    Text(
-                        text = "Nonstop kliniky a rýchle volanie v prípade núdze",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(EmergencyRed),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Emergency,
+                            contentDescription = "Pohotovosť",
+                            tint = Color.White
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Veterinárna Pohotovosť",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = EmergencyRed
+                        )
+                        Text(
+                            text = "Nonstop kliniky a rýchle volanie v prípade núdze",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }
 
-        // Search & Filters
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { searchQuery = it },
-            placeholder = { Text("Hľadať mesto, kliniku (napr. Bratislava, Košice)...") },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-            singleLine = true,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("clinic_search_input")
-        )
+        // Search & Filters (scrolls up with list)
+        item {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text("Hľadať mesto, kliniku (napr. Bratislava, Košice)...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("clinic_search_input")
+            )
+        }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            FilterChip(
-                selected = only24hEmergency,
-                onClick = { only24hEmergency = !only24hEmergency },
-                label = { Text("🚨 Len 24/7 Pohotovosti") },
-                modifier = Modifier.testTag("filter_emergency_toggle")
-            )
-            Text(
-                text = "${filteredClinics.size} nájdených",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                FilterChip(
+                    selected = only24hEmergency,
+                    onClick = { only24hEmergency = !only24hEmergency },
+                    label = { Text("🚨 Len 24/7 Pohotovosti") },
+                    modifier = Modifier.testTag("filter_emergency_toggle")
+                )
+                Text(
+                    text = "${filteredClinics.size} nájdených",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
 
         if (filteredClinics.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Default.LocalHospital,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                        modifier = Modifier.size(48.dp)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Žiadna klinika nezodpovedá filtru.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 48.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Default.LocalHospital,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Žiadna klinika nezodpovedá filtru.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(filteredClinics, key = { it.id }) { clinic ->
-                    VetClinicCard(
-                        clinic = clinic,
-                        onCallClick = {
-                            val callIntent = Intent(Intent.ACTION_DIAL).apply {
-                                data = Uri.parse("tel:${clinic.phone.replace(" ", "")}")
-                            }
-                            try {
-                                context.startActivity(callIntent)
-                            } catch (e: Exception) {
-                                Toast.makeText(context, "Nemocnicu nemožno vytočiť: ${clinic.phone}", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        onNavigateClick = {
-                            val geoUri = Uri.parse("geo:0,0?q=${Uri.encode(clinic.name + ", " + clinic.address)}")
-                            val mapIntent = Intent(Intent.ACTION_VIEW, geoUri)
-                            try {
-                                context.startActivity(mapIntent)
-                            } catch (e: Exception) {
-                                Toast.makeText(context, "Navigácia nie je dostupná.", Toast.LENGTH_SHORT).show()
-                            }
+            items(filteredClinics, key = { it.id }) { clinic ->
+                VetClinicCard(
+                    clinic = clinic,
+                    onCallClick = {
+                        val callIntent = Intent(Intent.ACTION_DIAL).apply {
+                            data = Uri.parse("tel:${clinic.phone.replace(" ", "")}")
                         }
-                    )
-                }
+                        try {
+                            context.startActivity(callIntent)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Nemocnicu nemožno vytočiť: ${clinic.phone}", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    onNavigateClick = {
+                        val geoUri = Uri.parse("geo:0,0?q=${Uri.encode(clinic.name + ", " + clinic.address)}")
+                        val mapIntent = Intent(Intent.ACTION_VIEW, geoUri)
+                        try {
+                            context.startActivity(mapIntent)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Navigácia nie je dostupná.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
             }
         }
     }
