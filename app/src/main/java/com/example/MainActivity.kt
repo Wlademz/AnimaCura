@@ -333,20 +333,32 @@ fun MainAppContent(viewModel: PetViewModel) {
                     pet = selectedPet,
                     medicalRecords = medicalRecords,
                     medications = medications,
+                    photos = photos,
                     latestWeight = weightLogs.firstOrNull()?.weightKg ?: selectedPet?.targetWeightKg,
                     onAddRecordClick = {
                         drugToAssign = null
+                        recordToEdit = null
                         showAddRecordDialog = true
                     },
                     onEditRecordClick = { record ->
                         recordToEdit = record
+                        showAddRecordDialog = true
                     },
                     onAddMedicationClick = {
                         drugToAssign = null
                         showAddMedDialog = true
                     },
+                    onAddPhotoClick = {
+                        photoToEdit = null
+                        showAddPhotoDialog = true
+                    },
+                    onEditPhotoClick = { photo ->
+                        photoToEdit = photo
+                        showAddPhotoDialog = true
+                    },
                     onDeleteRecord = { viewModel.deleteMedicalRecord(it) },
                     onDeleteMedication = { viewModel.deleteMedication(it) },
+                    onDeletePhoto = { viewModel.deletePhoto(it) },
                     onMarkDoseTaken = { viewModel.markDoseTaken(it) },
                     onToggleMedActive = { viewModel.toggleMedicationActive(it) },
                     onExportClick = { showExportDialog = true },
@@ -359,12 +371,8 @@ fun MainAppContent(viewModel: PetViewModel) {
                 2 -> WeightAndGalleryScreen(
                     pet = selectedPet,
                     weightLogs = weightLogs,
-                    photos = photos,
                     onAddWeightClick = { showAddWeightDialog = true },
-                    onAddPhotoClick = { showAddPhotoDialog = true },
-                    onEditPhoto = { photo -> photoToEdit = photo },
-                    onDeleteWeightLog = { viewModel.deleteWeightLog(it) },
-                    onDeletePhoto = { viewModel.deletePhoto(it) }
+                    onDeleteWeightLog = { viewModel.deleteWeightLog(it) }
                 )
 
                 3 -> EmergencyClinicsScreen(
