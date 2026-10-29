@@ -62,8 +62,42 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.R
 import com.example.data.local.entity.Pet
 import com.example.util.ImageStorageHelper
+
+/**
+ * Resolves pet photo model for Coil: local file, drawable resource ID or default breed portrait
+ */
+fun resolvePetImageModel(context: android.content.Context, pet: Pet?): Any? {
+    if (pet == null) return null
+    val uri = pet.imageUri.trim()
+    if (uri.isNotBlank()) {
+        if (uri.startsWith("/") || uri.startsWith("file:") || uri.startsWith("content:")) {
+            val file = File(uri)
+            return if (file.exists()) file else uri
+        }
+        val cleanName = uri.substringAfterLast("/").substringBeforeLast(".")
+        if (cleanName.contains("bary", ignoreCase = true)) {
+            return R.drawable.img_bary_dog_1793267982723
+        }
+        if (cleanName.contains("luna", ignoreCase = true)) {
+            return R.drawable.img_luna_cat_1793268004228
+        }
+        val resId = context.resources.getIdentifier(cleanName, "drawable", context.packageName)
+        if (resId != 0) return resId
+        val resIdDirect = context.resources.getIdentifier(uri, "drawable", context.packageName)
+        if (resIdDirect != 0) return resIdDirect
+    }
+    // Default illustrative photo for Bary and Luna!
+    if (pet.name.equals("Bary", ignoreCase = true)) {
+        return R.drawable.img_bary_dog_1793267982723
+    }
+    if (pet.name.equals("Luna", ignoreCase = true)) {
+        return R.drawable.img_luna_cat_1793268004228
+    }
+    return null
+}
 
 /**
  * Reusable Pet Avatar displaying either pet photo or initial letter on background color
@@ -76,9 +110,12 @@ fun PetAvatar(
     onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val imageModel = androidx.compose.runtime.remember(pet?.id, pet?.name, pet?.imageUri) {
+        resolvePetImageModel(context, pet)
+    }
     val petColor = if (pet != null) Color(pet.avatarColorHex) else MaterialTheme.colorScheme.primary
     val initial = pet?.name?.take(1)?.uppercase() ?: "?"
-    val hasPhoto = !pet?.imageUri.isNullOrBlank()
 
     Box(
         modifier = modifier
@@ -94,10 +131,10 @@ fun PetAvatar(
             ),
         contentAlignment = Alignment.Center
     ) {
-        if (hasPhoto && pet != null) {
+        if (imageModel != null && pet != null) {
             AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(pet.imageUri)
+                model = ImageRequest.Builder(context)
+                    .data(imageModel)
                     .crossfade(true)
                     .build(),
                 contentDescription = "Fotografia ${pet.name}",

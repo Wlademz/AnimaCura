@@ -106,6 +106,7 @@ abstract class AppDatabase : RoomDatabase() {
                 INSTANCE?.let { database ->
                     scope.launch(Dispatchers.IO) {
                         ensureForumDiscussions(database)
+                        ensureIllustrativePhotos(database)
                     }
                 }
             }
@@ -140,7 +141,8 @@ abstract class AppDatabase : RoomDatabase() {
                     targetWeightKg = 31.5,
                     adoptedFrom = "Útulok Sloboda zvierat Bratislava",
                     adoptedBy = "Vladimír & Rodina",
-                    adoptionDate = "20.05.2021"
+                    adoptionDate = "20.05.2021",
+                    imageUri = "android.resource://com.example/drawable/img_bary_dog_1793267982723"
                 )
             )
 
@@ -162,7 +164,8 @@ abstract class AppDatabase : RoomDatabase() {
                     targetWeightKg = 4.3,
                     adoptedFrom = "Chovná stanica Little Whiskers",
                     adoptedBy = "Elena K.",
-                    adoptionDate = "15.10.2022"
+                    adoptionDate = "15.10.2022",
+                    imageUri = "android.resource://com.example/drawable/img_luna_cat_1793268004228"
                 )
             )
 
@@ -474,7 +477,19 @@ abstract class AppDatabase : RoomDatabase() {
                     category = "Hojenie rany",
                     date = "12.08.2024",
                     description = "Rana na vankúšiku je čistá, hojí sa bez zápalu.",
-                    drawableResName = "pet_med_icon_1787650018098"
+                    imageUri = "android.resource://com.example/drawable/img_bary_paw_1793268027108",
+                    drawableResName = "img_bary_paw_1793268027108"
+                )
+            )
+            photoDao.insertPhoto(
+                PetPhoto(
+                    petId = pet1Id,
+                    title = "Portrét Baryho v záhrade",
+                    category = "Portrét",
+                    date = "01.07.2024",
+                    description = "Veselý a zdravý psík, hustá zlatá srsť po prečesaní.",
+                    imageUri = "android.resource://com.example/drawable/img_bary_dog_1793267982723",
+                    drawableResName = "img_bary_dog_1793267982723"
                 )
             )
             photoDao.insertPhoto(
@@ -484,7 +499,8 @@ abstract class AppDatabase : RoomDatabase() {
                     category = "Lekárska správa / Recept",
                     date = "20.10.2023",
                     description = "Oficiálny posudok dysplázie bedrových kĺbov.",
-                    drawableResName = "pet_med_icon_1787650018098"
+                    imageUri = "android.resource://com.example/drawable/vet_medicine_box_icon_1787724951811",
+                    drawableResName = "vet_medicine_box_icon_1787724951811"
                 )
             )
             photoDao.insertPhoto(
@@ -494,7 +510,19 @@ abstract class AppDatabase : RoomDatabase() {
                     category = "Zuby / Ústna dutina",
                     date = "10.04.2024",
                     description = "Ďasná bez začervenania, zubný kameň úplne odstránený.",
-                    drawableResName = "pet_med_icon_1787650018098"
+                    imageUri = "android.resource://com.example/drawable/img_luna_teeth_1793268048085",
+                    drawableResName = "img_luna_teeth_1793268048085"
+                )
+            )
+            photoDao.insertPhoto(
+                PetPhoto(
+                    petId = pet2Id,
+                    title = "Portrét Luny na deke",
+                    category = "Portrét",
+                    date = "10.08.2024",
+                    description = "Pokojná a prítulná mačička po veterinárnej kontrole.",
+                    imageUri = "android.resource://com.example/drawable/img_luna_cat_1793268004228",
+                    drawableResName = "img_luna_cat_1793268004228"
                 )
             )
 
@@ -824,6 +852,63 @@ abstract class AppDatabase : RoomDatabase() {
                     )
                 )
                 forumDao.insertComments(defaultComments)
+            }
+        }
+
+        suspend fun ensureIllustrativePhotos(db: AppDatabase) {
+            val petDao = db.petDao()
+            val photoDao = db.petPhotoDao()
+            val pets = petDao.getPetsList()
+            for (pet in pets) {
+                if (pet.name.equals("Bary", ignoreCase = true) && pet.imageUri.isBlank()) {
+                    petDao.updatePet(pet.copy(imageUri = "android.resource://com.example/drawable/img_bary_dog_1793267982723"))
+                } else if (pet.name.equals("Luna", ignoreCase = true) && pet.imageUri.isBlank()) {
+                    petDao.updatePet(pet.copy(imageUri = "android.resource://com.example/drawable/img_luna_cat_1793268004228"))
+                }
+            }
+
+            val allPhotos = photoDao.getAllPhotosList()
+            for (photo in allPhotos) {
+                if (photo.imageUri.isBlank()) {
+                    val newUri = when {
+                        photo.title.contains("labk", ignoreCase = true) -> "android.resource://com.example/drawable/img_bary_paw_1793268027108"
+                        photo.title.contains("ďas", ignoreCase = true) || photo.title.contains("zub", ignoreCase = true) -> "android.resource://com.example/drawable/img_luna_teeth_1793268048085"
+                        photo.title.contains("RTG", ignoreCase = true) || photo.title.contains("správa", ignoreCase = true) -> "android.resource://com.example/drawable/vet_medicine_box_icon_1787724951811"
+                        photo.petId == 1L -> "android.resource://com.example/drawable/img_bary_dog_1793267982723"
+                        photo.petId == 2L -> "android.resource://com.example/drawable/img_luna_cat_1793268004228"
+                        else -> "android.resource://com.example/drawable/img_bary_dog_1793267982723"
+                    }
+                    photoDao.updatePhoto(photo.copy(imageUri = newUri))
+                }
+            }
+
+            val baryId = pets.find { it.name.equals("Bary", ignoreCase = true) }?.id ?: 1L
+            val lunaId = pets.find { it.name.equals("Luna", ignoreCase = true) }?.id ?: 2L
+            if (allPhotos.none { it.petId == baryId && it.category == "Portrét" }) {
+                photoDao.insertPhoto(
+                    PetPhoto(
+                        petId = baryId,
+                        title = "Portrét Baryho v záhrade",
+                        category = "Portrét",
+                        date = "01.07.2024",
+                        description = "Veselý a zdravý psík, hustá zlatá srsť po prečesaní.",
+                        imageUri = "android.resource://com.example/drawable/img_bary_dog_1793267982723",
+                        drawableResName = "img_bary_dog_1793267982723"
+                    )
+                )
+            }
+            if (allPhotos.none { it.petId == lunaId && it.category == "Portrét" }) {
+                photoDao.insertPhoto(
+                    PetPhoto(
+                        petId = lunaId,
+                        title = "Portrét Luny na deke",
+                        category = "Portrét",
+                        date = "10.08.2024",
+                        description = "Pokojná a prítulná mačička po veterinárnej kontrole.",
+                        imageUri = "android.resource://com.example/drawable/img_luna_cat_1793268004228",
+                        drawableResName = "img_luna_cat_1793268004228"
+                    )
+                )
             }
         }
     }

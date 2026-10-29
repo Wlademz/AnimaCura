@@ -26,6 +26,9 @@ interface PetDao {
     @Query("SELECT * FROM pets WHERE id = :id LIMIT 1")
     fun getPetById(id: Long): Flow<Pet?>
 
+    @Query("SELECT * FROM pets")
+    suspend fun getPetsList(): List<Pet>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPet(pet: Pet): Long
 
@@ -118,6 +121,9 @@ interface ReminderDao {
 interface PetPhotoDao {
     @Query("SELECT * FROM pet_photos WHERE petId = :petId ORDER BY id DESC")
     fun getPhotosForPet(petId: Long): Flow<List<PetPhoto>>
+
+    @Query("SELECT * FROM pet_photos")
+    suspend fun getAllPhotosList(): List<PetPhoto>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPhoto(photo: PetPhoto): Long

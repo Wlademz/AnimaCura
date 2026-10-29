@@ -42,6 +42,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.R
 import com.example.util.ImageStorageHelper
 import java.io.File
 import androidx.compose.material3.Button
@@ -897,6 +898,63 @@ fun DetailedMedicationCard(
     }
 }
 
+/**
+ * Resolves Coil image model for photo gallery items (file, resource ID, or fallback)
+ */
+fun resolvePhotoImageModel(context: android.content.Context, photo: PetPhoto): Any? {
+    val uri = photo.imageUri.trim()
+    if (uri.isNotBlank()) {
+        if (uri.startsWith("/") || uri.startsWith("file:") || uri.startsWith("content:")) {
+            val file = File(uri)
+            return if (file.exists()) file else uri
+        }
+        val cleanName = uri.substringAfterLast("/").substringBeforeLast(".")
+        if (cleanName.contains("paw", ignoreCase = true) || cleanName.contains("labk", ignoreCase = true)) {
+            return R.drawable.img_bary_paw_1793268027108
+        }
+        if (cleanName.contains("teeth", ignoreCase = true) || cleanName.contains("zub", ignoreCase = true) || cleanName.contains("das", ignoreCase = true)) {
+            return R.drawable.img_luna_teeth_1793268048085
+        }
+        if (cleanName.contains("bary", ignoreCase = true)) {
+            return R.drawable.img_bary_dog_1793267982723
+        }
+        if (cleanName.contains("luna", ignoreCase = true)) {
+            return R.drawable.img_luna_cat_1793268004228
+        }
+        val resId = context.resources.getIdentifier(cleanName, "drawable", context.packageName)
+        if (resId != 0) return resId
+        val resIdDirect = context.resources.getIdentifier(uri, "drawable", context.packageName)
+        if (resIdDirect != 0) return resIdDirect
+    }
+    if (photo.drawableResName.isNotBlank()) {
+        val cleanName = photo.drawableResName.substringAfterLast("/").substringBeforeLast(".")
+        if (cleanName.contains("paw", ignoreCase = true) || cleanName.contains("labk", ignoreCase = true)) {
+            return R.drawable.img_bary_paw_1793268027108
+        }
+        if (cleanName.contains("teeth", ignoreCase = true) || cleanName.contains("zub", ignoreCase = true) || cleanName.contains("das", ignoreCase = true)) {
+            return R.drawable.img_luna_teeth_1793268048085
+        }
+        if (cleanName.contains("bary", ignoreCase = true)) {
+            return R.drawable.img_bary_dog_1793267982723
+        }
+        if (cleanName.contains("luna", ignoreCase = true)) {
+            return R.drawable.img_luna_cat_1793268004228
+        }
+        val resId = context.resources.getIdentifier(cleanName, "drawable", context.packageName)
+        if (resId != 0) return resId
+    }
+    return when {
+        photo.title.contains("labk", ignoreCase = true) -> R.drawable.img_bary_paw_1793268027108
+        photo.title.contains("Bary", ignoreCase = true) -> R.drawable.img_bary_dog_1793267982723
+        photo.title.contains("Luna", ignoreCase = true) || photo.title.contains("Luny", ignoreCase = true) -> R.drawable.img_luna_cat_1793268004228
+        photo.title.contains("ďas", ignoreCase = true) || photo.title.contains("zub", ignoreCase = true) -> R.drawable.img_luna_teeth_1793268048085
+        photo.title.contains("RTG", ignoreCase = true) || photo.title.contains("správa", ignoreCase = true) -> R.drawable.vet_medicine_box_icon_1787724951811
+        photo.petId == 1L -> R.drawable.img_bary_dog_1793267982723
+        photo.petId == 2L -> R.drawable.img_luna_cat_1793268004228
+        else -> R.drawable.pet_med_icon_1787650018098
+    }
+}
+
 @Composable
 fun PhotoItemCard(
     photo: PetPhoto,
@@ -906,8 +964,11 @@ fun PhotoItemCard(
     val context = LocalContext.current
     var showFullScreenImage by remember { mutableStateOf(false) }
     val isPdf = photo.imageUri.endsWith(".pdf", ignoreCase = true)
+    val imageModel = remember(photo.id, photo.imageUri, photo.drawableResName) {
+        resolvePhotoImageModel(context, photo)
+    }
 
-    if (showFullScreenImage && photo.imageUri.isNotBlank() && !isPdf) {
+    if (showFullScreenImage && !isPdf) {
         Dialog(onDismissRequest = { showFullScreenImage = false }) {
             Surface(
                 shape = RoundedCornerShape(20.dp),
@@ -943,18 +1004,20 @@ fun PhotoItemCard(
                         }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(photo.imageUri)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = photo.title,
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(320.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                    )
+                    if (imageModel != null) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(imageModel)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = photo.title,
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(320.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                        )
+                    }
                     if (photo.description.isNotBlank()) {
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
@@ -974,7 +1037,13 @@ fun PhotoItemCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onEdit() }
+            .clickable {
+                if (isPdf) {
+                    ImageStorageHelper.openAttachment(context, photo.imageUri)
+                } else {
+                    showFullScreenImage = true
+                }
+            }
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(
@@ -1035,90 +1104,88 @@ fun PhotoItemCard(
             Spacer(modifier = Modifier.height(10.dp))
 
             // Photo or PDF representation
-            if (photo.imageUri.isNotBlank()) {
-                if (isPdf) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFFDC2626).copy(alpha = 0.1f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFDC2626).copy(alpha = 0.25f)),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { ImageStorageHelper.openAttachment(context, photo.imageUri) }
+            if (isPdf) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFDC2626).copy(alpha = 0.1f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFDC2626).copy(alpha = 0.25f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { ImageStorageHelper.openAttachment(context, photo.imageUri) }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PictureAsPdf,
-                                contentDescription = "PDF správa",
-                                tint = Color(0xFFDC2626),
-                                modifier = Modifier.size(36.dp)
+                        Icon(
+                            imageVector = Icons.Default.PictureAsPdf,
+                            contentDescription = "PDF správa",
+                            tint = Color(0xFFDC2626),
+                            modifier = Modifier.size(36.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = photo.title,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold
                             )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = photo.title,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = "Lekárska správa / PDF (kliknutím otvoríte)",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Button(
-                                onClick = { ImageStorageHelper.openAttachment(context, photo.imageUri) },
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 6.dp)
-                            ) {
-                                Text("Otvoriť", fontSize = 11.sp)
-                            }
+                            Text(
+                                text = "Lekárska správa / PDF (kliknutím otvoríte)",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Button(
+                            onClick = { ImageStorageHelper.openAttachment(context, photo.imageUri) },
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Text("Otvoriť", fontSize = 11.sp)
                         }
                     }
-                } else {
+                }
+            } else if (imageModel != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { showFullScreenImage = true }
+                ) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(imageModel)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = photo.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(180.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { showFullScreenImage = true }
+                            .align(Alignment.BottomCenter)
+                            .background(Color.Black.copy(alpha = 0.55f))
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
                     ) {
-                        AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data(photo.imageUri)
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = photo.title,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .align(Alignment.BottomCenter)
-                                .background(Color.Black.copy(alpha = 0.55f))
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = photo.title,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                                Text(
-                                    text = "Zväčšiť",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color.White.copy(alpha = 0.8f),
-                                    fontSize = 10.sp
-                                )
-                            }
+                            Text(
+                                text = photo.title,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "🔍 Zväčšiť",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.White.copy(alpha = 0.8f),
+                                fontSize = 10.sp
+                            )
                         }
                     }
                 }
