@@ -48,6 +48,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.AlertDialog
@@ -2576,7 +2577,7 @@ fun AboutAppDialog(
                         }
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "Pomôžte zvieratkám v núdzi dobrovoľným príspevkom na činnosť združenia.",
+                            text = "Pomôžte zvieratkám v núdzi dobrovoľným príspevkom na činnosť združenia. Ďakujeme",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -2589,9 +2590,17 @@ fun AboutAppDialog(
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(10.dp))
                                 .clickable {
-                                    clipboardManager.setText(androidx.compose.ui.text.AnnotatedString("SK1809000000005127806127"))
-                                    android.widget.Toast.makeText(context, "IBAN bol skopírovaný do schránky", android.widget.Toast.LENGTH_SHORT).show()
+                                    try {
+                                        val intent = android.content.Intent(
+                                            android.content.Intent.ACTION_VIEW,
+                                            android.net.Uri.parse("https://www.facebook.com/OZBlaznivyZverinec/")
+                                        )
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        android.widget.Toast.makeText(context, "Nepodarilo sa otvoriť odkaz", android.widget.Toast.LENGTH_SHORT).show()
+                                    }
                                 }
+                                .testTag("facebook_oz_link_button")
                         ) {
                             Row(
                                 modifier = Modifier
@@ -2602,7 +2611,7 @@ fun AboutAppDialog(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "IBAN (ťuknite pre skopírovanie)",
+                                        text = "Facebook stránka",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.primary,
                                         fontWeight = FontWeight.SemiBold,
@@ -2610,18 +2619,18 @@ fun AboutAppDialog(
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
-                                        text = "SK18 0900 0000 0051 2780 6127",
-                                        style = MaterialTheme.typography.bodyMedium.copy(
-                                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
-                                        ),
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface
+                                        text = "https://www.facebook.com/OZBlaznivyZverinec/",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                     )
                                 }
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Icon(
-                                    imageVector = Icons.Default.ContentCopy,
-                                    contentDescription = "Kopírovať IBAN",
+                                    imageVector = Icons.Default.Share,
+                                    contentDescription = "Otvoriť Facebook link",
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp)
                                 )
