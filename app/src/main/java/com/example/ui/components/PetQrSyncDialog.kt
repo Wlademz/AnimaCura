@@ -107,7 +107,7 @@ fun PetQrSyncDialog(
                     decodedSyncData = parsed
                     scanErrorMessage = null
                 } else {
-                    scanErrorMessage = "QR kód bol prečítaný, ale neobsahuje platné PetMed dáta."
+                    scanErrorMessage = "QR kód bol prečítaný, ale neobsahuje platné AnimaCura_SK dáta."
                 }
             } else {
                 scanErrorMessage = "Nepodarilo sa rozpoznať QR kód. Skúste lepšie osvetlenie."
@@ -152,7 +152,7 @@ fun PetQrSyncDialog(
                             decodedSyncData = parsed
                             scanErrorMessage = null
                         } else {
-                            scanErrorMessage = "Snímka neobsahuje platný PetMed balíček."
+                            scanErrorMessage = "Snímka neobsahuje platný AnimaCura_SK balíček."
                         }
                     } else {
                         scanErrorMessage = "Na vybratej fotke nebol nájdený QR kód."
@@ -329,7 +329,7 @@ fun PetQrSyncDialog(
                                         val json = QrCodeUtils.toJson(sync)
                                         val shareIntent = Intent(Intent.ACTION_SEND).apply {
                                             type = "text/plain"
-                                            putExtra(Intent.EXTRA_SUBJECT, "PetMed QR Balíček - ${sync.petName}")
+                                            putExtra(Intent.EXTRA_SUBJECT, "AnimaCura_SK QR Balíček - ${sync.petName}")
                                             putExtra(Intent.EXTRA_TEXT, json)
                                         }
                                         context.startActivity(Intent.createChooser(shareIntent, "Zdieľať dáta zvieratka"))
@@ -401,7 +401,7 @@ fun PetQrSyncDialog(
                             if (parsed != null) scanErrorMessage = null
                         },
                         label = { Text("Alebo vložte kód / JSON balíček") },
-                        placeholder = { Text("{\"app\":\"PetMed\",\"name\":\"Bobi\"...}") },
+                        placeholder = { Text("{\"app\":\"AnimaCura_SK\",\"name\":\"Bobi\"...}") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
                         maxLines = 3

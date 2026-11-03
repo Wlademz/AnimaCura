@@ -127,7 +127,7 @@ fun LicenseExpiredLockScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "Aktivácia PetMed Denníka",
+                    text = "Aktivácia AnimaCura_SK",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,

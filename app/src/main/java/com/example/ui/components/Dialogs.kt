@@ -2366,7 +2366,7 @@ fun AboutAppDialog(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Pets,
-                        contentDescription = "PetMed Logo",
+                        contentDescription = "AnimaCura_SK Logo",
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(30.dp)
                     )
@@ -2375,7 +2375,7 @@ fun AboutAppDialog(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "PetMed Zdravotný Denník",
+                    text = "AnimaCura_SK Zdravotný Denník",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface

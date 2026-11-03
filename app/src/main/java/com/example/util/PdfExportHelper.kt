@@ -67,7 +67,7 @@ object PdfExportHelper {
                     <div class="header">
                         <div>
                             <h1 class="title">🐾 VETERINÁRNA ZDRAVOTNÁ KARTA</h1>
-                            <div class="subtitle">Aplikácia PetMed Zdravotný Denník &bull; Vygenerované: ${java.text.SimpleDateFormat("dd.MM.yyyy HH:mm", java.util.Locale.getDefault()).format(java.util.Date())}</div>
+                            <div class="subtitle">Aplikácia AnimaCura_SK Zdravotný Denník &bull; Vygenerované: ${java.text.SimpleDateFormat("dd.MM.yyyy HH:mm", java.util.Locale.getDefault()).format(java.util.Date())}</div>
                         </div>
             """)
 
@@ -181,7 +181,7 @@ object PdfExportHelper {
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 val printManager = context.getSystemService(Context.PRINT_SERVICE) as? PrintManager ?: return
-                val jobName = "PetMed_Karta_${pet.name}_${System.currentTimeMillis()}"
+                val jobName = "AnimaCura_SK_Karta_${pet.name}_${System.currentTimeMillis()}"
                 val printAdapter = webView.createPrintDocumentAdapter(jobName)
                 printManager.print(jobName, printAdapter, PrintAttributes.Builder().build())
             }

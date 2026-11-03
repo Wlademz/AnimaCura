@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "PetMed Dennik"
+rootProject.name = "AnimaCura_SK"
 
 include(":app")

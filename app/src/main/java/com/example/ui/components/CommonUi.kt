@@ -147,7 +147,7 @@ fun PetTopSelectorBar(
                         } else {
                             Image(
                                 painter = painterResource(id = R.drawable.pet_med_icon_1787650018098),
-                                contentDescription = "PetMed Logo",
+                                contentDescription = "AnimaCura_SK Logo",
                                 modifier = Modifier
                                     .size(42.dp)
                                     .clip(RoundedCornerShape(12.dp))
@@ -160,7 +160,7 @@ fun PetTopSelectorBar(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Image(
                                     painter = painterResource(id = R.drawable.pet_med_icon_1787650018098),
-                                    contentDescription = "PetMed Logo",
+                                    contentDescription = "AnimaCura_SK Logo",
                                     modifier = Modifier
                                         .size(18.dp)
                                         .clip(RoundedCornerShape(4.dp)),
@@ -168,7 +168,7 @@ fun PetTopSelectorBar(
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "PetMed Denník",
+                                    text = "AnimaCura_SK",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = MaterialTheme.colorScheme.onSurface,

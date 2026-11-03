@@ -80,6 +80,9 @@ object LicenseManager {
 
     // Master author activation passwords
     private val MASTER_ORGANIZATION_KEYS = setOf(
+        "ANIMACURA-VIP-2026",
+        "ANIMACURA-SK-VIP",
+        "ANIMACURA-PRO-LIFETIME",
         "PETMED-VIP-2026",
         "WLADEMZ-WIKI-2026",
         "PETMED-PRO-LIFETIME",

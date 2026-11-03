@@ -36,7 +36,7 @@ class ReminderNotificationReceiver : BroadcastReceiver() {
                             NotificationHelper.scheduleReminder(
                                 context = context,
                                 reminderId = r.id,
-                                title = "🐾 PetMed: ${r.title}",
+                                title = "🐾 AnimaCura_SK: ${r.title}",
                                 message = if (r.notes.isNotBlank()) "${r.type} • ${r.notes}" else "${r.type} o ${r.dueTime}",
                                 triggerAtMillis = trigger
                             )
@@ -49,7 +49,7 @@ class ReminderNotificationReceiver : BroadcastReceiver() {
             return
         }
 
-        val title = intent.getStringExtra("title") ?: "🐾 PetMed Pripomienka"
+        val title = intent.getStringExtra("title") ?: "🐾 AnimaCura_SK Pripomienka"
         val message = intent.getStringExtra("message") ?: "Nezabudnite na podanie dávky lieku alebo termín u veterinára."
         val notificationId = intent.getIntExtra("notification_id", (System.currentTimeMillis() % 100000).toInt())
 
@@ -87,7 +87,7 @@ class ReminderNotificationReceiver : BroadcastReceiver() {
 
 object NotificationHelper {
     const val CHANNEL_ID = "petmed_reminders_channel_v2"
-    private const val CHANNEL_NAME = "PetMed Pripomienky a Lieky"
+    private const val CHANNEL_NAME = "AnimaCura_SK Pripomienky a Lieky"
     private const val CHANNEL_DESC = "Zvukové upozornenia na dávkovanie liekov, očkovania a termíny"
 
     fun createNotificationChannel(context: Context) {

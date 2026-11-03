@@ -86,7 +86,7 @@ object QrCodeUtils {
      */
     fun toJson(export: PetSyncExport): String {
         val json = JSONObject()
-        json.put("app", "PetMed")
+        json.put("app", "AnimaCura_SK")
         json.put("name", export.petName)
         json.put("species", export.species)
         json.put("breed", export.breed)

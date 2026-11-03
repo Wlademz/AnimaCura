@@ -427,7 +427,7 @@ fun DashboardScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "PetMed Zdravotný Denník",
+                text = "AnimaCura_SK Zdravotný Denník",
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)

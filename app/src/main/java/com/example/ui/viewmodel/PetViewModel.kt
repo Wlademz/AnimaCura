@@ -261,7 +261,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                 NotificationHelper.scheduleReminder(
                     context = getApplication(),
                     reminderId = remId,
-                    title = "🐾 PetMed ($petName): $title",
+                    title = "🐾 AnimaCura_SK ($petName): $title",
                     message = "Plánovaný termín: $reminderType ($nextDueDate o 09:00)",
                     triggerAtMillis = trigger
                 )
@@ -319,7 +319,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                 NotificationHelper.scheduleReminder(
                     context = getApplication(),
                     reminderId = remId,
-                    title = "🐾 PetMed ($petName): $title",
+                    title = "🐾 AnimaCura_SK ($petName): $title",
                     message = "Plánovaný termín: $reminderType ($nextDueDate o 09:00)",
                     triggerAtMillis = trigger
                 )
@@ -459,7 +459,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
             NotificationHelper.scheduleReminder(
                 context = getApplication(),
                 reminderId = remId,
-                title = "🐾 PetMed ($petName): $title",
+                title = "🐾 AnimaCura_SK ($petName): $title",
                 message = if (notes.isNotBlank()) "$type • $notes" else "$type o $dueTime",
                 triggerAtMillis = trigger
             )
@@ -477,7 +477,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                 NotificationHelper.scheduleReminder(
                     context = getApplication(),
                     reminderId = reminder.id,
-                    title = "🐾 PetMed: ${reminder.title}",
+                    title = "🐾 AnimaCura_SK: ${reminder.title}",
                     message = "${reminder.type} o ${reminder.dueTime}",
                     triggerAtMillis = trigger
                 )
@@ -613,7 +613,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
 
         val reportBuilder = StringBuilder()
         reportBuilder.append("=========================================\n")
-        reportBuilder.append("🐾 ZDRAVOTNÝ ZÁZNAM ZVIERATKA - PetMed\n")
+        reportBuilder.append("🐾 ZDRAVOTNÝ ZÁZNAM ZVIERATKA - AnimaCura_SK\n")
         reportBuilder.append("=========================================\n\n")
 
         val chipStr = if (pet.chipNumber.isNotBlank()) pet.chipNumber else "Neuvedené"
@@ -678,7 +678,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         reportBuilder.append("\n-----------------------------------------\n")
-        reportBuilder.append("Vygenerované aplikáciou PetMed Zdravotný Denník\n")
+        reportBuilder.append("Vygenerované aplikáciou AnimaCura_SK Zdravotný Denník\n")
         reportBuilder.append("Vytvoril: Wlademz Mlck & Wiki Pup (vladoacidoza@gmail.com)\n")
 
         val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
@@ -841,7 +841,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         if (delaySeconds <= 0) {
             NotificationHelper.showImmediateNotification(
                 context = getApplication(),
-                title = "🐾 PetMed Pripomienka: $petName",
+                title = "🐾 AnimaCura_SK Pripomienka: $petName",
                 message = "Test notifikácie bol úspešný! Pripomienky liekov a očkovaní vás včas upozornia v notifikačnej lište."
             )
         } else {
@@ -849,7 +849,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
             NotificationHelper.scheduleReminder(
                 context = getApplication(),
                 reminderId = 99999L,
-                title = "🐾 PetMed Test Zvonenia: $petName",
+                title = "🐾 AnimaCura_SK Test Zvonenia: $petName",
                 message = "Plánované upozornenie po $delaySeconds s úspešne zazvonilo! Alarmy a dávkovanie fungujú.",
                 triggerAtMillis = triggerMillis
             )
