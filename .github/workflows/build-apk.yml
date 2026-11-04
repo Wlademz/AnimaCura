@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android APK and Release Bundle
 
 on:
   push:
@@ -27,21 +27,36 @@ jobs:
         with:
           gradle-version: '9.3.1'
 
-      - name: Restore Debug Keystore and Environment
+      - name: Restore Keystores and Environment
         run: |
           if [ -f "debug.keystore.base64" ]; then
             base64 -d debug.keystore.base64 > debug.keystore
           else
             keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           fi
+          if [ -f "my-upload-key.jks.base64" ]; then
+            base64 -d my-upload-key.jks.base64 > my-upload-key.jks
+          else
+            keytool -genkey -v -keystore my-upload-key.jks -storepass animacura123 -alias upload -keypass animacura123 -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=AnimaCura,O=AnimaCura,C=SK"
+          fi
           touch .env
 
-      - name: Build Debug APK
-        run: gradle assembleDebug --no-daemon -Djava.awt.headless=true -Dorg.gradle.jvmargs="-Xmx4g -Dfile.encoding=UTF-8 -Djava.awt.headless=true"
+      - name: Build Debug APK & Release Bundle (AAB)
+        env:
+          STORE_PASSWORD: animacura123
+          KEY_PASSWORD: animacura123
+        run: gradle assembleDebug bundleRelease --no-daemon -Djava.awt.headless=true -Dorg.gradle.jvmargs="-Xmx4g -Dfile.encoding=UTF-8 -Djava.awt.headless=true"
 
-      - name: Upload APK Artifact
+      - name: Upload Debug APK Artifact (For Phone Testing)
         uses: actions/upload-artifact@v4
         with:
           name: AnimaCura_SK-App-Debug
           path: app/build/outputs/apk/debug/*.apk
+          retention-days: 14
+
+      - name: Upload Release AAB Artifact (For Google Play Console)
+        uses: actions/upload-artifact@v4
+        with:
+          name: AnimaCura_SK-PlayStore-AAB
+          path: app/build/outputs/bundle/release/*.aab
           retention-days: 14
