@@ -140,14 +140,26 @@ interface PetPhotoDao {
 
 @Dao
 interface VetClinicDao {
-    @Query("SELECT * FROM vet_clinics ORDER BY is24hEmergency DESC, rating DESC")
+    @Query("SELECT * FROM vet_clinics ORDER BY is24hEmergency DESC, city ASC, name ASC")
     fun getAllClinics(): Flow<List<VetClinic>>
+
+    @Query("SELECT * FROM vet_clinics")
+    suspend fun getAllClinicsList(): List<VetClinic>
+
+    @Query("SELECT COUNT(*) FROM vet_clinics")
+    suspend fun getClinicsCount(): Int
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertClinic(clinic: VetClinic): Long
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertClinics(clinics: List<VetClinic>)
+
+    @Update
+    suspend fun updateClinic(clinic: VetClinic)
+
+    @Delete
+    suspend fun deleteClinic(clinic: VetClinic)
 }
 
 @Dao

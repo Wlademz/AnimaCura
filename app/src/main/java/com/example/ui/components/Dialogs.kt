@@ -65,9 +65,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.example.data.local.entity.Reminder
+import com.example.data.local.entity.VetClinic
+import com.example.ui.theme.MedicalGreen
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -2021,20 +2025,45 @@ fun AddPhotoDialog(
 
 @Composable
 fun AddReminderDialog(
+    reminderToEdit: Reminder? = null,
     onDismiss: () -> Unit,
-    onConfirm: (title: String, type: String, dueDate: String, dueTime: String, notes: String) -> Unit
+    onConfirm: (title: String, type: String, dueDate: String, dueTime: String, notes: String) -> Unit,
+    onDelete: (() -> Unit)? = null
 ) {
-    var title by remember { mutableStateOf("") }
+    var title by remember { mutableStateOf(reminderToEdit?.title ?: "") }
     val types = listOf("Dávka lieku", "Očkovanie", "Odčervenie", "Kontrola u veta", "Strihanie pazúrikov / Hygiena")
-    var selectedType by remember { mutableStateOf(types[0]) }
+    var selectedType by remember { mutableStateOf(reminderToEdit?.type ?: types[0]) }
     val currentDateStr = remember { SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date()) }
-    var dueDate by remember { mutableStateOf(currentDateStr) }
-    var dueTime by remember { mutableStateOf("08:00") }
-    var notes by remember { mutableStateOf("") }
+    var dueDate by remember { mutableStateOf(reminderToEdit?.dueDate ?: currentDateStr) }
+    var dueTime by remember { mutableStateOf(reminderToEdit?.dueTime ?: "08:00") }
+    var notes by remember { mutableStateOf(reminderToEdit?.notes ?: "") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Nová Pripomienka", fontWeight = FontWeight.Bold) },
+        title = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (reminderToEdit != null) "Upraviť Pripomienku" else "Nová Pripomienka",
+                    fontWeight = FontWeight.Bold
+                )
+                if (onDelete != null && reminderToEdit != null) {
+                    IconButton(
+                        onClick = onDelete,
+                        modifier = Modifier.testTag("delete_reminder_dialog_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Zmazať pripomienku",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+            }
+        },
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 OutlinedTextField(
@@ -2043,7 +2072,9 @@ fun AddReminderDialog(
                     label = { Text("Čo pripomenúť? *") },
                     placeholder = { Text("napr. Ranná tabletka Apoquel") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("reminder_title_input")
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(
@@ -2066,13 +2097,17 @@ fun AddReminderDialog(
                         value = dueDate,
                         onValueChange = { dueDate = it },
                         label = { Text("Dátum") },
-                        modifier = Modifier.weight(1.2f)
+                        modifier = Modifier
+                            .weight(1.2f)
+                            .testTag("reminder_date_input")
                     )
                     OutlinedTextField(
                         value = dueTime,
                         onValueChange = { dueTime = it },
                         label = { Text("Čas") },
-                        modifier = Modifier.weight(0.8f)
+                        modifier = Modifier
+                            .weight(0.8f)
+                            .testTag("reminder_time_input")
                     )
                 }
                 Spacer(modifier = Modifier.height(10.dp))
@@ -2092,9 +2127,255 @@ fun AddReminderDialog(
                         onConfirm(title.trim(), selectedType, dueDate.trim(), dueTime.trim(), notes.trim())
                     }
                 },
-                enabled = title.isNotBlank()
+                enabled = title.isNotBlank(),
+                modifier = Modifier.testTag("save_reminder_button")
             ) {
-                Text("Uložiť Pripomienku")
+                Text(if (reminderToEdit != null) "Uložiť zmeny" else "Uložiť Pripomienku")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) { Text("Zrušiť") }
+        }
+    )
+}
+
+@Composable
+fun RateClinicDialog(
+    clinic: VetClinic,
+    onDismiss: () -> Unit,
+    onConfirm: (rating: Int, review: String) -> Unit
+) {
+    var selectedStars by remember { mutableIntStateOf(if (clinic.userRating > 0) clinic.userRating else 5) }
+    var reviewText by remember { mutableStateOf(clinic.userReview) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Column {
+                Text(
+                    text = "Hodnotenie veterinára",
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleLarge
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = clinic.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Ako hodnotíte starostlivosť a prístup k zvieratku?",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Star Rating Selector (1 to 5)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    (1..5).forEach { star ->
+                        IconButton(
+                            onClick = { selectedStars = star },
+                            modifier = Modifier
+                                .size(44.dp)
+                                .testTag("star_rating_$star")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = "$star hviezdičiek",
+                                tint = if (star <= selectedStars) Color(0xFFEAB308) else MaterialTheme.colorScheme.outlineVariant,
+                                modifier = Modifier.size(34.dp)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = when (selectedStars) {
+                        5 -> "⭐⭐⭐⭐⭐ Vynikajúci prístup & starostlivosť"
+                        4 -> "⭐⭐⭐⭐ Veľmi dobrá skúsenosť"
+                        3 -> "⭐⭐⭐ Priemerná návšteva"
+                        2 -> "⭐⭐ Zmiešané pocity / dlhé čakanie"
+                        else -> "⭐ Nespokojnosť s ošetrením"
+                    },
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (selectedStars >= 4) MedicalGreen else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = reviewText,
+                    onValueChange = { reviewText = it },
+                    label = { Text("Vaša osobná recenzia / skúsenosť") },
+                    placeholder = { Text("napr. Skvelá diagnostika, ochotný lekár, moderné vybavenie, primerané ceny...") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("clinic_review_input"),
+                    minLines = 3,
+                    maxLines = 5
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(selectedStars, reviewText.trim()) },
+                modifier = Modifier.testTag("save_rating_button")
+            ) {
+                Text("Uložiť hodnotenie")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) { Text("Zavrieť") }
+        }
+    )
+}
+
+@Composable
+fun AddClinicDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (
+        name: String,
+        city: String,
+        address: String,
+        phone: String,
+        email: String,
+        is24h: Boolean,
+        openingHours: String,
+        emergencyNote: String,
+        type: String
+    ) -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+    var city by remember { mutableStateOf("") }
+    var address by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var is24h by remember { mutableStateOf(false) }
+    var openingHours by remember { mutableStateOf("Po-Pia 08:30 - 18:00, So 09:00 - 12:00") }
+    var note by remember { mutableStateOf("") }
+    val clinicTypes = listOf("Veterinárna ambulancia", "Veterinárna klinika", "Pohotovosť 24/7")
+    var selectedType by remember { mutableStateOf(clinicTypes[0]) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Pridať veterinára / ambulanciu", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Názov ambulancie / meno veta *") },
+                    placeholder = { Text("napr. VetAmbulancia MVDr. Novák") },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("add_clinic_name")
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = city,
+                        onValueChange = { city = it },
+                        label = { Text("Mesto *") },
+                        placeholder = { Text("napr. Martin") },
+                        singleLine = true,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("add_clinic_city")
+                    )
+                    OutlinedTextField(
+                        value = phone,
+                        onValueChange = { phone = it },
+                        label = { Text("Telefón *") },
+                        placeholder = { Text("+421...") },
+                        singleLine = true,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("add_clinic_phone")
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = address,
+                    onValueChange = { address = it },
+                    label = { Text("Ulica a číslo") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = openingHours,
+                    onValueChange = { openingHours = it },
+                    label = { Text("Ordinačné hodiny") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Switch(
+                        checked = is24h,
+                        onCheckedChange = {
+                            is24h = it
+                            if (it) selectedType = "Pohotovosť 24/7" else if (selectedType == "Pohotovosť 24/7") selectedType = "Veterinárna ambulancia"
+                        }
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = if (is24h) "Nonstop 24/7 Pohotovosť" else "Bežná denná ambulancia",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = note,
+                    onValueChange = { note = it },
+                    label = { Text("Poznámka / špecializácia") },
+                    placeholder = { Text("napr. chirurgia, vakcinácie, sono...") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (name.isNotBlank() && city.isNotBlank() && phone.isNotBlank()) {
+                        onConfirm(
+                            name.trim(),
+                            city.trim(),
+                            address.trim(),
+                            phone.trim(),
+                            email.trim(),
+                            is24h,
+                            openingHours.trim(),
+                            note.trim(),
+                            selectedType
+                        )
+                    }
+                },
+                enabled = name.isNotBlank() && city.isNotBlank() && phone.isNotBlank(),
+                modifier = Modifier.testTag("save_clinic_button")
+            ) {
+                Text("Pridať do zoznamu")
             }
         },
         dismissButton = {

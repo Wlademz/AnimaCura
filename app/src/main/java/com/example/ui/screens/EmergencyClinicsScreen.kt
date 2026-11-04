@@ -6,6 +6,8 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +26,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Emergency
 import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.LocationOn
@@ -37,6 +40,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -61,21 +65,61 @@ import com.example.data.local.entity.VetClinic
 import com.example.ui.theme.EmergencyRed
 import com.example.ui.theme.MedicalGreen
 
+enum class ClinicFilterType {
+    ALL,
+    EMERGENCY_ONLY,
+    AMBULANCE_ONLY,
+    USER_RATED
+}
+
+fun removeAccents(input: String): String {
+    val normalized = java.text.Normalizer.normalize(input, java.text.Normalizer.Form.NFD)
+    return normalized.replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "").lowercase()
+}
+
+fun matchesSearch(target: String, query: String): Boolean {
+    val cleanTarget = removeAccents(target)
+    val cleanQuery = removeAccents(query).trim()
+    if (cleanQuery.isEmpty()) return true
+    if (cleanTarget.contains(cleanQuery)) return true
+
+    val queryWords = cleanQuery.split("\\s+".toRegex())
+        .map { it.trim() }
+        .filter { it.length > 1 && it !in listOf("v", "vo", "na", "pri", "do", "od", "so", "zo") }
+
+    if (queryWords.isEmpty()) return cleanTarget.contains(cleanQuery)
+
+    return queryWords.all { word ->
+        val stem = when {
+            word.length > 4 && (word.endsWith("e") || word.endsWith("i") || word.endsWith("u") || word.endsWith("a")) -> word.dropLast(1)
+            else -> word
+        }
+        cleanTarget.contains(word) || cleanTarget.contains(stem)
+    }
+}
+
 @Composable
 fun EmergencyClinicsScreen(
     clinics: List<VetClinic>,
+    onRateClinicClick: (VetClinic) -> Unit,
+    onAddClinicClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
-    var only24hEmergency by remember { mutableStateOf(false) }
+    var activeFilter by remember { mutableStateOf(ClinicFilterType.ALL) }
 
     val filteredClinics = clinics.filter { clinic ->
-        val matchesQuery = clinic.name.contains(searchQuery, ignoreCase = true) ||
-                clinic.city.contains(searchQuery, ignoreCase = true) ||
-                clinic.address.contains(searchQuery, ignoreCase = true)
-        val matchesEmergency = if (only24hEmergency) clinic.is24hEmergency else true
-        matchesQuery && matchesEmergency
+        val fullClinicText = "${clinic.name} ${clinic.city} ${clinic.address} ${clinic.clinicType} ${clinic.emergencyFeeNote}"
+        val matchesQuery = matchesSearch(fullClinicText, searchQuery)
+
+        val matchesFilter = when (activeFilter) {
+            ClinicFilterType.ALL -> true
+            ClinicFilterType.EMERGENCY_ONLY -> clinic.is24hEmergency
+            ClinicFilterType.AMBULANCE_ONLY -> !clinic.is24hEmergency
+            ClinicFilterType.USER_RATED -> clinic.userRating > 0
+        }
+        matchesQuery && matchesFilter
     }
 
     LazyColumn(
@@ -83,11 +127,11 @@ fun EmergencyClinicsScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Emergency Banner Header (scrolls up with list)
+        // Emergency & Ambulances Banner Header
         item {
             ElevatedCard(
                 shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.elevatedCardColors(containerColor = EmergencyRed.copy(alpha = 0.1f)),
+                colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -96,27 +140,27 @@ fun EmergencyClinicsScreen(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(44.dp)
+                            .size(46.dp)
                             .clip(CircleShape)
                             .background(EmergencyRed),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Emergency,
-                            contentDescription = "Pohotovosť",
+                            contentDescription = "Pohotovosti a Ambulancie",
                             tint = Color.White
                         )
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Veterinárna Pohotovosť",
+                            text = "Pohotovosti & Ambulancie",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = EmergencyRed
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Nonstop kliniky a rýchle volanie v prípade núdze",
+                            text = "Nonstop pohotovosti, denné kliniky a ambulancie v každom regióne Slovenska",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -125,37 +169,121 @@ fun EmergencyClinicsScreen(
             }
         }
 
-        // Search & Filters (scrolls up with list)
-        item {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = { Text("Hľadať mesto, kliniku (napr. Bratislava, Košice)...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("clinic_search_input")
-            )
-        }
-
+        // Search bar & Add Clinic button
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                FilterChip(
-                    selected = only24hEmergency,
-                    onClick = { only24hEmergency = !only24hEmergency },
-                    label = { Text("🚨 Len 24/7 Pohotovosti") },
-                    modifier = Modifier.testTag("filter_emergency_toggle")
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("Mesto, klinika (napr. Zvolen)...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(Icons.Default.Close, contentDescription = "Zmazať vyhľadávanie")
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("clinic_search_input")
                 )
-                Text(
-                    text = "${filteredClinics.size} nájdených",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+
+                Button(
+                    onClick = onAddClinicClick,
+                    shape = RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 14.dp),
+                    modifier = Modifier.testTag("add_clinic_button")
+                ) {
+                    Text("+ Pridať", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                }
+            }
+        }
+
+        // Filter chips
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    FilterChip(
+                        selected = activeFilter == ClinicFilterType.ALL,
+                        onClick = { activeFilter = ClinicFilterType.ALL },
+                        label = { Text("Všetky (${clinics.size})", fontSize = 11.sp) },
+                        modifier = Modifier.testTag("filter_all_clinics")
+                    )
+                    FilterChip(
+                        selected = activeFilter == ClinicFilterType.EMERGENCY_ONLY,
+                        onClick = { activeFilter = ClinicFilterType.EMERGENCY_ONLY },
+                        label = { Text("🚨 24/7 Pohotovosť", fontSize = 11.sp) },
+                        modifier = Modifier.testTag("filter_emergency_toggle")
+                    )
+                    FilterChip(
+                        selected = activeFilter == ClinicFilterType.AMBULANCE_ONLY,
+                        onClick = { activeFilter = ClinicFilterType.AMBULANCE_ONLY },
+                        label = { Text("🏥 Ambulancie", fontSize = 11.sp) },
+                        modifier = Modifier.testTag("filter_ambulance_toggle")
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FilterChip(
+                        selected = activeFilter == ClinicFilterType.USER_RATED,
+                        onClick = { activeFilter = ClinicFilterType.USER_RATED },
+                        label = { Text("⭐ Moje hodnotené", fontSize = 11.sp) },
+                        modifier = Modifier.testTag("filter_user_rated")
+                    )
+                    Text(
+                        text = "${filteredClinics.size} zariadení",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        // Quick City Shortcuts
+        item {
+            val quickCities = listOf(
+                "Zvolen", "Banská Bystrica", "Bratislava", "Košice", "Žilina", "Prešov",
+                "Nitra", "Trnava", "Trenčín", "Poprad", "Martin", "Prievidza",
+                "Nové Zámky", "Piešťany", "Lučenec", "Ružomberok", "Michalovce", "Bardejov"
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                quickCities.forEach { city ->
+                    val isSelected = searchQuery.equals(city, ignoreCase = true)
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+                        modifier = Modifier
+                            .clickable {
+                                searchQuery = if (isSelected) "" else city
+                            }
+                            .testTag("quick_city_$city")
+                    ) {
+                        Text(
+                            text = city,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                        )
+                    }
+                }
             }
         }
 
@@ -164,7 +292,7 @@ fun EmergencyClinicsScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 48.dp),
+                        .padding(vertical = 40.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -176,10 +304,14 @@ fun EmergencyClinicsScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Žiadna klinika nezodpovedá filtru.",
+                            text = "Žiadna klinika alebo ambulancia nezodpovedá výberu.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedButton(onClick = onAddClinicClick) {
+                            Text("Pridať vlastnú ambulanciu")
+                        }
                     }
                 }
             }
@@ -187,6 +319,7 @@ fun EmergencyClinicsScreen(
             items(filteredClinics, key = { it.id }) { clinic ->
                 VetClinicCard(
                     clinic = clinic,
+                    onRateClick = { onRateClinicClick(clinic) },
                     onCallClick = {
                         val callIntent = Intent(Intent.ACTION_DIAL).apply {
                             data = Uri.parse("tel:${clinic.phone.replace(" ", "")}")
@@ -215,6 +348,7 @@ fun EmergencyClinicsScreen(
 @Composable
 fun VetClinicCard(
     clinic: VetClinic,
+    onRateClick: () -> Unit,
     onCallClick: () -> Unit,
     onNavigateClick: () -> Unit
 ) {
@@ -246,13 +380,13 @@ fun VetClinicCard(
                 } else {
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
                     ) {
                         Text(
-                            text = "AMBULANCIA",
+                            text = "🏥 ${clinic.clinicType.uppercase()}",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                     }
@@ -335,12 +469,56 @@ fun VetClinicCard(
                 )
             }
 
+            // User Rating and Review box if rated
+            if (clinic.userRating > 0) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color(0xFFFEF9C3), // warm light yellow
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(8.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Vaše hodnotenie: ",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF854D0E)
+                            )
+                            repeat(clinic.userRating) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = null,
+                                    tint = Color(0xFFEAB308),
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "(${clinic.userRating}/5)",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF854D0E)
+                            )
+                        }
+                        if (clinic.userReview.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "„${clinic.userReview}“",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFF713F12)
+                            )
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Action Buttons
+            // Action Buttons (Call, Navigate, Rate)
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Button(
@@ -354,11 +532,11 @@ fun VetClinicCard(
                         .weight(1f)
                         .testTag("call_clinic_button_${clinic.id}")
                 ) {
-                    Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(15.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(3.dp))
                     Text(
                         text = "Volať",
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         softWrap = false
@@ -373,11 +551,33 @@ fun VetClinicCard(
                         .weight(1f)
                         .testTag("navigate_clinic_button_${clinic.id}")
                 ) {
-                    Icon(Icons.Default.NearMe, contentDescription = null, modifier = Modifier.size(15.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(Icons.Default.NearMe, contentDescription = null, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(3.dp))
                     Text(
                         text = "Navigovať",
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                }
+
+                OutlinedButton(
+                    onClick = onRateClick,
+                    shape = RoundedCornerShape(10.dp),
+                    contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = if (clinic.userRating > 0) Color(0xFFB45309) else MaterialTheme.colorScheme.primary
+                    ),
+                    modifier = Modifier
+                        .weight(1.1f)
+                        .testTag("rate_clinic_button_${clinic.id}")
+                ) {
+                    Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color(0xFFEAB308))
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(
+                        text = if (clinic.userRating > 0) "Hodnotené" else "Hodnotiť",
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         softWrap = false

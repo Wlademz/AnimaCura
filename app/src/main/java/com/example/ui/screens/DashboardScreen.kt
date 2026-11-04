@@ -22,6 +22,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Emergency
 import androidx.compose.material.icons.filled.Euro
 import androidx.compose.material.icons.filled.LocalHospital
@@ -32,6 +34,7 @@ import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
@@ -82,6 +85,8 @@ fun DashboardScreen(
     onAddMedClick: () -> Unit = {},
     onAddWeightClick: () -> Unit = {},
     onAddReminderClick: () -> Unit = {},
+    onEditReminder: (Reminder) -> Unit = {},
+    onDeleteReminder: (Reminder) -> Unit = {},
     onMarkDoseTaken: (Medication) -> Unit,
     onToggleReminder: (Reminder) -> Unit,
     onEmergencyClick: () -> Unit = {},
@@ -184,7 +189,7 @@ fun DashboardScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     QuickToolItem(
-                        icon = Icons.Default.QrCodeScanner,
+                        painter = painterResource(id = com.example.R.drawable.ic_barcode),
                         title = "Čiarový kód",
                         subtitle = "Skener liekov",
                         badgeColor = Color(0xFF0D9488),
@@ -398,10 +403,12 @@ fun DashboardScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else {
-                    reminders.take(4).forEach { reminder ->
+                    reminders.take(6).forEach { reminder ->
                         ReminderRow(
                             reminder = reminder,
-                            onToggle = { onToggleReminder(reminder) }
+                            onToggle = { onToggleReminder(reminder) },
+                            onEdit = { onEditReminder(reminder) },
+                            onDelete = { onDeleteReminder(reminder) }
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                     }
@@ -528,7 +535,9 @@ fun MedicationDosageRow(
 @Composable
 fun ReminderRow(
     reminder: Reminder,
-    onToggle: () -> Unit
+    onToggle: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
     Surface(
         shape = RoundedCornerShape(10.dp),
@@ -536,19 +545,26 @@ fun ReminderRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
-            .clickable { onToggle() }
+            .clickable { onEdit() }
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = if (reminder.isCompleted) Icons.Outlined.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
-                contentDescription = if (reminder.isCompleted) "Hotovo" else "Označiť ako hotové",
-                tint = if (reminder.isCompleted) MedicalGreen else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(10.dp))
+            IconButton(
+                onClick = onToggle,
+                modifier = Modifier
+                    .size(32.dp)
+                    .testTag("toggle_reminder_${reminder.id}")
+            ) {
+                Icon(
+                    imageVector = if (reminder.isCompleted) Icons.Outlined.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
+                    contentDescription = if (reminder.isCompleted) "Hotovo" else "Označiť ako hotové",
+                    tint = if (reminder.isCompleted) MedicalGreen else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(6.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = reminder.title,
@@ -563,13 +579,40 @@ fun ReminderRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            IconButton(
+                onClick = onEdit,
+                modifier = Modifier
+                    .size(32.dp)
+                    .testTag("edit_reminder_${reminder.id}")
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Upraviť pripomienku",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            IconButton(
+                onClick = onDelete,
+                modifier = Modifier
+                    .size(32.dp)
+                    .testTag("delete_reminder_${reminder.id}")
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Zmazať pripomienku",
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
         }
     }
 }
 
 @Composable
 fun QuickToolItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
+    painter: androidx.compose.ui.graphics.painter.Painter? = null,
     title: String,
     subtitle: String,
     badgeColor: Color,
@@ -595,12 +638,21 @@ fun QuickToolItem(
                     .background(badgeColor.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = badgeColor,
-                    modifier = Modifier.size(16.dp)
-                )
+                if (painter != null) {
+                    Icon(
+                        painter = painter,
+                        contentDescription = null,
+                        tint = badgeColor,
+                        modifier = Modifier.size(16.dp)
+                    )
+                } else if (icon != null) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = badgeColor,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             }
             Spacer(modifier = Modifier.width(6.dp))
             Column(modifier = Modifier.weight(1f)) {

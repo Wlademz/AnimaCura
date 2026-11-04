@@ -485,10 +485,84 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun updateReminder(
+        reminder: Reminder,
+        title: String,
+        type: String,
+        dueDate: String,
+        dueTime: String,
+        notes: String
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val updated = reminder.copy(
+                title = title,
+                type = type,
+                dueDate = dueDate,
+                dueTime = dueTime,
+                notes = notes
+            )
+            repository.updateReminder(updated)
+            NotificationHelper.cancelReminder(getApplication(), reminder.id)
+            if (!updated.isCompleted) {
+                val petName = selectedPet.value?.name ?: "Zvieratko"
+                val trigger = NotificationHelper.parseTriggerMillis(dueDate, dueTime)
+                NotificationHelper.scheduleReminder(
+                    context = getApplication(),
+                    reminderId = updated.id,
+                    title = "🐾 AnimaCura_SK ($petName): $title",
+                    message = if (notes.isNotBlank()) "$type • $notes" else "$type o $dueTime",
+                    triggerAtMillis = trigger
+                )
+            }
+        }
+    }
+
     fun deleteReminder(reminder: Reminder) {
         viewModelScope.launch(Dispatchers.IO) {
             repository.deleteReminder(reminder)
             NotificationHelper.cancelReminder(getApplication(), reminder.id)
+        }
+    }
+
+    // VET CLINIC & AMBULANCE OPERATIONS
+    fun rateClinic(clinic: VetClinic, userRating: Int, userReview: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val updated = clinic.copy(
+                userRating = userRating,
+                userReview = userReview
+            )
+            repository.updateClinic(updated)
+        }
+    }
+
+    fun addCustomClinic(
+        name: String,
+        city: String,
+        address: String,
+        phone: String,
+        email: String = "",
+        is24hEmergency: Boolean,
+        openingHours: String,
+        emergencyFeeNote: String,
+        clinicType: String
+    ) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.insertClinic(
+                VetClinic(
+                    name = name,
+                    city = city,
+                    address = address,
+                    phone = phone,
+                    email = email,
+                    is24hEmergency = is24hEmergency,
+                    openingHours = openingHours,
+                    rating = 5.0,
+                    emergencyFeeNote = emergencyFeeNote,
+                    clinicType = clinicType,
+                    userRating = 5,
+                    userReview = "Pridané používateľom"
+                )
+            )
         }
     }
 

@@ -113,7 +113,10 @@ data class VetClinic(
     val rating: Double = 4.8,
     val emergencyFeeNote: String = "Nonstop pohotovostný príjem",
     val latitude: Double = 48.1486,
-    val longitude: Double = 17.1077
+    val longitude: Double = 17.1077,
+    val userRating: Int = 0, // 0 = nehodnotené používateľom, 1..5 = hviezdičky
+    val userReview: String = "",
+    val clinicType: String = "Pohotovosť" // "Pohotovosť 24/7", "Veterinárna ambulancia", "Veterinárna klinika"
 )
 
 @Entity(tableName = "forum_posts")

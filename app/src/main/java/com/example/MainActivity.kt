@@ -63,7 +63,10 @@ import com.example.data.local.LicenseManager
 import com.example.data.local.entity.MedicalRecord
 import com.example.data.local.entity.Pet
 import com.example.data.local.entity.PetPhoto
+import com.example.data.local.entity.Reminder
+import com.example.data.local.entity.VetClinic
 import com.example.ui.components.AboutAppDialog
+import com.example.ui.components.AddClinicDialog
 import com.example.ui.components.AddForumPostDialog
 import com.example.ui.components.AddMedicalRecordDialog
 import com.example.ui.components.AddMedicationDialog
@@ -71,6 +74,7 @@ import com.example.ui.components.AddPetDialog
 import com.example.ui.components.AddPhotoDialog
 import com.example.ui.components.AddReminderDialog
 import com.example.ui.components.AddWeightDialog
+import com.example.ui.components.RateClinicDialog
 import androidx.activity.compose.BackHandler
 import com.example.ui.components.BarcodeScannerDialog
 import com.example.ui.components.ConfirmDeletePetDialog
@@ -155,6 +159,9 @@ fun MainAppContent(viewModel: PetViewModel) {
     var showAddPhotoDialog by remember { mutableStateOf(false) }
     var photoToEdit by remember { mutableStateOf<PetPhoto?>(null) }
     var showAddReminderDialog by remember { mutableStateOf(false) }
+    var reminderToEdit by remember { mutableStateOf<Reminder?>(null) }
+    var clinicToRate by remember { mutableStateOf<VetClinic?>(null) }
+    var showAddClinicDialog by remember { mutableStateOf(false) }
     var showExportDialog by remember { mutableStateOf(false) }
     var showAddForumPostDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
@@ -299,6 +306,8 @@ fun MainAppContent(viewModel: PetViewModel) {
                         onAddMedClick = { showAddMedDialog = true },
                         onAddWeightClick = { showAddWeightDialog = true },
                         onAddReminderClick = { showAddReminderDialog = true },
+                        onEditReminder = { reminderToEdit = it },
+                        onDeleteReminder = { viewModel.deleteReminder(it) },
                         onMarkDoseTaken = { viewModel.markDoseTaken(it) },
                         onToggleReminder = { viewModel.toggleReminderCompleted(it) },
                         onEmergencyClick = { currentNavIndex = 3 },
@@ -376,7 +385,9 @@ fun MainAppContent(viewModel: PetViewModel) {
                 )
 
                 3 -> EmergencyClinicsScreen(
-                    clinics = vetClinics
+                    clinics = vetClinics,
+                    onRateClinicClick = { clinicToRate = it },
+                    onAddClinicClick = { showAddClinicDialog = true }
                 )
 
                 4 -> CommunityForumScreen(
@@ -596,6 +607,52 @@ fun MainAppContent(viewModel: PetViewModel) {
             onConfirm = { title, type, dueDate, dueTime, notes ->
                 viewModel.addReminder(title, type, dueDate, dueTime, notes)
                 showAddReminderDialog = false
+            }
+        )
+    }
+
+    if (reminderToEdit != null) {
+        AddReminderDialog(
+            reminderToEdit = reminderToEdit,
+            onDismiss = { reminderToEdit = null },
+            onConfirm = { title, type, dueDate, dueTime, notes ->
+                viewModel.updateReminder(reminderToEdit!!, title, type, dueDate, dueTime, notes)
+                reminderToEdit = null
+            },
+            onDelete = {
+                viewModel.deleteReminder(reminderToEdit!!)
+                reminderToEdit = null
+            }
+        )
+    }
+
+    if (clinicToRate != null) {
+        RateClinicDialog(
+            clinic = clinicToRate!!,
+            onDismiss = { clinicToRate = null },
+            onConfirm = { rating, review ->
+                viewModel.rateClinic(clinicToRate!!, rating, review)
+                clinicToRate = null
+            }
+        )
+    }
+
+    if (showAddClinicDialog) {
+        AddClinicDialog(
+            onDismiss = { showAddClinicDialog = false },
+            onConfirm = { name, city, address, phone, email, is24h, openingHours, emergencyNote, type ->
+                viewModel.addCustomClinic(
+                    name = name,
+                    city = city,
+                    address = address,
+                    phone = phone,
+                    email = email,
+                    is24hEmergency = is24h,
+                    openingHours = openingHours,
+                    emergencyFeeNote = emergencyNote,
+                    clinicType = type
+                )
+                showAddClinicDialog = false
             }
         )
     }

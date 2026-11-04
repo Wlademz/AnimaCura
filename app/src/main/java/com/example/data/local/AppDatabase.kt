@@ -41,7 +41,7 @@ import kotlinx.coroutines.launch
         ForumComment::class,
         Expense::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -73,6 +73,14 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_6_7 = object : androidx.room.migration.Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE vet_clinics ADD COLUMN userRating INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE vet_clinics ADD COLUMN userReview TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE vet_clinics ADD COLUMN clinicType TEXT NOT NULL DEFAULT 'Pohotovosť'")
+            }
+        }
+
         fun getDatabase(context: Context, scope: CoroutineScope): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -80,7 +88,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "pet_health_database"
                 )
-                .addMigrations(MIGRATION_4_5, MIGRATION_5_6)
+                .addMigrations(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                 .fallbackToDestructiveMigration()
                 .addCallback(DatabaseCallback(scope))
                 .build()
@@ -105,6 +113,7 @@ abstract class AppDatabase : RoomDatabase() {
                 super.onOpen(db)
                 INSTANCE?.let { database ->
                     scope.launch(Dispatchers.IO) {
+                        ensureVetClinics(database)
                         ensureForumDiscussions(database)
                         ensureIllustrativePhotos(database)
                     }
@@ -527,87 +536,7 @@ abstract class AppDatabase : RoomDatabase() {
             )
 
             // 7. Vet Emergency & Clinics Database (Real Slovakia locations)
-            val clinics = listOf(
-                VetClinic(
-                    name = "Veterinárna pohotovosť VetPoint Nonstop",
-                    city = "Bratislava",
-                    address = "Ružinovská 42, 821 03 Bratislava",
-                    phone = "+421 2 434 23 333",
-                    email = "info@vetpoint.sk",
-                    is24hEmergency = true,
-                    openingHours = "NONSTOP (24/7 vrátane sviatkov)",
-                    rating = 4.9,
-                    emergencyFeeNote = "Príjem urgentných pacientov nonstop, RTG, sono, hospitalizácia, chirurgický tím",
-                    latitude = 48.1568,
-                    longitude = 17.1592
-                ),
-                VetClinic(
-                    name = "Veterinárna Nemocnica Bennett",
-                    city = "Bratislava",
-                    address = "Kopčianska 65, 851 01 Bratislava - Petržalka",
-                    phone = "+421 905 500 000",
-                    email = "recepcia@bennett.sk",
-                    is24hEmergency = true,
-                    openingHours = "NONSTOP 24/7",
-                    rating = 4.8,
-                    emergencyFeeNote = "Kompletná intenzívna starostlivosť, CT, endoskopia, operačné sály",
-                    latitude = 48.1152,
-                    longitude = 17.0945
-                ),
-                VetClinic(
-                    name = "Univerzitná veterinárna nemocnica UVLF",
-                    city = "Košice",
-                    address = "Komenského 73, 041 81 Košice",
-                    phone = "+421 915 984 689",
-                    email = "nemocnica@uvlf.sk",
-                    is24hEmergency = true,
-                    openingHours = "NONSTOP pohotovosť",
-                    rating = 4.9,
-                    emergencyFeeNote = "Špičková klinika s JIS, pohotovostná chirurgická a interná služba",
-                    latitude = 48.7389,
-                    longitude = 21.2467
-                ),
-                VetClinic(
-                    name = "Veterinárna pohotovostná klinika Žilina",
-                    city = "Žilina",
-                    address = "Vysokoškolákov 8, 010 08 Žilina",
-                    phone = "+421 903 600 700",
-                    email = "kontakt@vetza.sk",
-                    is24hEmergency = true,
-                    openingHours = "NONSTOP (24/7 pohotovosť)",
-                    rating = 4.7,
-                    emergencyFeeNote = "Akútne zákroky, nočná pohotovosť na telefóne",
-                    latitude = 49.2155,
-                    longitude = 18.7523
-                ),
-                VetClinic(
-                    name = "VetClinic Banská Bystrica",
-                    city = "Banská Bystrica",
-                    address = "Zvolenská cesta 14, 974 05 Banská Bystrica",
-                    phone = "+421 48 416 33 22",
-                    email = "ambulancia@vetbb.sk",
-                    is24hEmergency = true,
-                    openingHours = "Po-Ne 08:00 - 20:00 (Pohotovosť na zavolanie)",
-                    rating = 4.8,
-                    emergencyFeeNote = "Pohotovostný veterinárny lekár v dosahu 24h",
-                    latitude = 48.7212,
-                    longitude = 19.1398
-                ),
-                VetClinic(
-                    name = "Veterinárne centrum Nitra",
-                    city = "Nitra",
-                    address = "Štefánikova trieda 70, 949 01 Nitra",
-                    phone = "+421 948 123 456",
-                    email = "nitra@vetcentrum.sk",
-                    is24hEmergency = false,
-                    openingHours = "Po-Pia 08:00 - 19:00, So 09:00 - 13:00",
-                    rating = 4.6,
-                    emergencyFeeNote = "Špecializovaná kardiológia a dermatológia",
-                    latitude = 48.3061,
-                    longitude = 18.0863
-                )
-            )
-            clinicDao.insertClinics(clinics)
+            clinicDao.insertClinics(getDefaultVetClinics())
 
             // 8. Discussion Forum for Pet Owners
             val forumPosts = listOf(
@@ -910,6 +839,1001 @@ abstract class AppDatabase : RoomDatabase() {
                     )
                 )
             }
+        }
+
+        suspend fun ensureVetClinics(db: AppDatabase) {
+            val clinicDao = db.vetClinicDao()
+            val existing = clinicDao.getAllClinicsList()
+            if (existing.size < 60) {
+                clinicDao.insertClinics(getDefaultVetClinics())
+            }
+        }
+
+        fun getDefaultVetClinics(): List<VetClinic> {
+            return listOf(
+                // ==================== BANSKOBYSTRICKÝ KRAJ ====================
+                // ZVOLEN
+                VetClinic(
+                    id = 1L,
+                    name = "Veterinárna ambulancia - MVDr. Vojtech Korpás",
+                    city = "Zvolen",
+                    address = "Dukelských hrdinov 25, 960 01 Zvolen",
+                    phone = "+421 905 131 437",
+                    email = "korpas@vetzvolen.sk",
+                    is24hEmergency = true,
+                    openingHours = "NONSTOP (24 hodín pohotovosť / na telefóne)",
+                    rating = 4.9,
+                    emergencyFeeNote = "Akútna pohotovostná služba, chirurgické zákroky, RTG a hospitalizácia",
+                    latitude = 48.5772,
+                    longitude = 19.1245,
+                    clinicType = "Pohotovosť 24/7",
+                    userRating = 5,
+                    userReview = "Veľmi ochotný a obetavý pán doktor, pomohol nám urgentne v noci."
+                ),
+                VetClinic(
+                    id = 2L,
+                    name = "Veterinárna ambulancia ZVOLEN",
+                    city = "Zvolen",
+                    address = "Kuzmányho nábrežie 322/2, 960 01 Zvolen",
+                    phone = "+421 908 422 002",
+                    email = "info@veterinarna-ambulancia-zvolen.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:30 - 18:00, So 09:00 - 12:00",
+                    rating = 4.8,
+                    emergencyFeeNote = "Komplexná veterinárna starostlivosť, čipovanie, pasy, sono a laboratórium",
+                    latitude = 48.5735,
+                    longitude = 19.1310,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 3L,
+                    name = "ZvolenVet - Veterinárna Klinika",
+                    city = "Zvolen",
+                    address = "Družstevná 8, 960 01 Zvolen",
+                    phone = "+421 918 106 630",
+                    email = "recepcia@zvolenvet.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 19:00, So 09:00 - 13:00",
+                    rating = 4.8,
+                    emergencyFeeNote = "Moderná klinika, inhalačná anestézia, kardiologické vyšetrenia a stomatológia",
+                    latitude = 48.5801,
+                    longitude = 19.1412,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 4L,
+                    name = "Veterinárna poliklinika Sliač & Zvolen",
+                    city = "Sliač",
+                    address = "Kúpeľná 14, 962 31 Sliač (okres Zvolen)",
+                    phone = "+421 911 345 678",
+                    email = "sliac@vetpoliklinika.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:30 - 18:00, So 09:00 - 12:00 (Pohotovosť na tel.)",
+                    rating = 4.9,
+                    emergencyFeeNote = "Pohotovostný výjazd a pohotovosť pre okres Zvolen",
+                    latitude = 48.6140,
+                    longitude = 19.1430,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                // BANSKÁ BYSTRICA
+                VetClinic(
+                    id = 5L,
+                    name = "VetClinic Banská Bystrica 24h",
+                    city = "Banská Bystrica",
+                    address = "Zvolenská cesta 14, 974 05 Banská Bystrica",
+                    phone = "+421 48 416 33 22",
+                    email = "ambulancia@vetbb.sk",
+                    is24hEmergency = true,
+                    openingHours = "NONSTOP (Pohotovostný lekár na zavolanie)",
+                    rating = 4.8,
+                    emergencyFeeNote = "Pohotovostný veterinárny lekár v dosahu 24h",
+                    latitude = 48.7212,
+                    longitude = 19.1398,
+                    clinicType = "Pohotovosť 24/7"
+                ),
+                VetClinic(
+                    id = 6L,
+                    name = "Veterinárna ambulancia Sásová",
+                    city = "Banská Bystrica",
+                    address = "Rudohorská 27, 974 11 Banská Bystrica",
+                    phone = "+421 915 223 344",
+                    email = "sasova@vetbystrica.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 09:00 - 18:00, So 09:00 - 12:00",
+                    rating = 4.9,
+                    emergencyFeeNote = "Preventívne prehliadky, strihanie pazúrikov, vakcíny",
+                    latitude = 48.7540,
+                    longitude = 19.1670,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 7L,
+                    name = "Veterinárna ambulancia Fončorda",
+                    city = "Banská Bystrica",
+                    address = "Kyjevské námestie 5, 974 04 Banská Bystrica",
+                    phone = "+421 48 413 77 88",
+                    email = "foncorda@vetbb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:30 - 18:30, So 09:00 - 12:00",
+                    rating = 4.7,
+                    emergencyFeeNote = "Komplexná interná starostlivosť a čistenie zubov",
+                    latitude = 48.7300,
+                    longitude = 19.1200,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                // BREZNO, DETVA, KRUPINA, ŽIAR NAD HRONOM, BANSKÁ ŠTIAVNICA, LUČENEC, RIMAVSKÁ SOBOTA, VEĽKÝ KRTÍŠ
+                VetClinic(
+                    id = 8L,
+                    name = "Veterinárna ambulancia Brezno",
+                    city = "Brezno",
+                    address = "Rázusova 18, 977 01 Brezno",
+                    phone = "+421 48 611 25 44",
+                    email = "brezno@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 17:00, So 09:00 - 11:30",
+                    rating = 4.7,
+                    emergencyFeeNote = "Starostlivosť o spoločenské a hospodárske zvieratá",
+                    latitude = 48.8050,
+                    longitude = 19.6430,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 9L,
+                    name = "Veterinárna ambulancia Detva",
+                    city = "Detva",
+                    address = "Štúrova 24, 962 12 Detva",
+                    phone = "+421 45 545 61 23",
+                    email = "detva@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:30 - 17:00",
+                    rating = 4.8,
+                    emergencyFeeNote = "Všeobecná veterinárna prax, vakcinácie a odčervenie",
+                    latitude = 48.5610,
+                    longitude = 19.4200,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 10L,
+                    name = "Veterinárne stredisko Krupina",
+                    city = "Krupina",
+                    address = "ČSA 35, 963 01 Krupina",
+                    phone = "+421 45 551 12 34",
+                    email = "krupina@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 16:30, So 09:00 - 11:00",
+                    rating = 4.7,
+                    emergencyFeeNote = "Veterinárna prevencia a liečba",
+                    latitude = 48.3540,
+                    longitude = 19.0660,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 11L,
+                    name = "Veterinárna klinika Žiar nad Hronom",
+                    city = "Žiar nad Hronom",
+                    address = "Ulica SNP 118, 965 01 Žiar nad Hronom",
+                    phone = "+421 45 672 44 11",
+                    email = "ziar@vetklinika.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 18:00, So 09:00 - 12:00",
+                    rating = 4.8,
+                    emergencyFeeNote = "Diagnostika, chirurgické zákroky, RTG a sono",
+                    latitude = 48.5860,
+                    longitude = 18.8520,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 12L,
+                    name = "Veterinárna ambulancia Banská Štiavnica",
+                    city = "Banská Štiavnica",
+                    address = "Dolná 15, 969 01 Banská Štiavnica",
+                    phone = "+421 45 692 11 88",
+                    email = "stiavnica@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:30 - 16:30, So na objednanie",
+                    rating = 4.8,
+                    emergencyFeeNote = "Všeobecná starostlivosť a urgentný výjazd",
+                    latitude = 48.4590,
+                    longitude = 18.8930,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 13L,
+                    name = "Veterinárna nemocnica Lučenec",
+                    city = "Lučenec",
+                    address = "Vajanského 44, 984 01 Lučenec",
+                    phone = "+421 47 433 11 00",
+                    email = "lucenec@vetnemocnica.sk",
+                    is24hEmergency = true,
+                    openingHours = "NONSTOP 24/7 (Pohotovosť na telefóne)",
+                    rating = 4.8,
+                    emergencyFeeNote = "Hospitalizácia a akútna pohotovostná starostlivosť",
+                    latitude = 48.3320,
+                    longitude = 19.6640,
+                    clinicType = "Pohotovosť 24/7"
+                ),
+                VetClinic(
+                    id = 14L,
+                    name = "Veterinárna ambulancia Gemer Rimavská Sobota",
+                    city = "Rimavská Sobota",
+                    address = "Cukrovarská 12, 979 01 Rimavská Sobota",
+                    phone = "+421 47 562 33 22",
+                    email = "rimavska@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 17:30, So 08:30 - 11:30",
+                    rating = 4.7,
+                    emergencyFeeNote = "Komplexná starostlivosť pre okres Rimavská Sobota",
+                    latitude = 48.3830,
+                    longitude = 20.0210,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 15L,
+                    name = "Veterinárne stredisko Veľký Krtíš",
+                    city = "Veľký Krtíš",
+                    address = "Nemocničná 8, 990 01 Veľký Krtíš",
+                    phone = "+421 47 483 14 55",
+                    email = "krtis@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 16:30",
+                    rating = 4.6,
+                    emergencyFeeNote = "Očkovanie, odčervenie, interná starostlivosť",
+                    latitude = 48.2110,
+                    longitude = 19.3500,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+
+                // ==================== BRATISLAVSKÝ KRAJ ====================
+                VetClinic(
+                    id = 16L,
+                    name = "Veterinárna pohotovosť VetPoint Nonstop",
+                    city = "Bratislava",
+                    address = "Ružinovská 42, 821 03 Bratislava",
+                    phone = "+421 2 434 23 333",
+                    email = "info@vetpoint.sk",
+                    is24hEmergency = true,
+                    openingHours = "NONSTOP (24/7 vrátane sviatkov)",
+                    rating = 4.9,
+                    emergencyFeeNote = "Príjem urgentných pacientov nonstop, RTG, sono, hospitalizácia, chirurgický tím",
+                    latitude = 48.1568,
+                    longitude = 17.1592,
+                    clinicType = "Pohotovosť 24/7",
+                    userRating = 5,
+                    userReview = "Rýchly zásah pri akútnej otrave v noci, psíka zachránili."
+                ),
+                VetClinic(
+                    id = 17L,
+                    name = "Veterinárna Nemocnica Bennett",
+                    city = "Bratislava",
+                    address = "Kopčianska 65, 851 01 Bratislava - Petržalka",
+                    phone = "+421 905 500 000",
+                    email = "recepcia@bennett.sk",
+                    is24hEmergency = true,
+                    openingHours = "NONSTOP 24/7",
+                    rating = 4.8,
+                    emergencyFeeNote = "Kompletná intenzívna starostlivosť, CT, endoskopia, operačné sály",
+                    latitude = 48.1152,
+                    longitude = 17.0945,
+                    clinicType = "Pohotovosť 24/7"
+                ),
+                VetClinic(
+                    id = 18L,
+                    name = "Veterinárna ambulancia Petržalka - MVDr. Kováč",
+                    city = "Bratislava",
+                    address = "Haanova 12, 851 04 Bratislava",
+                    phone = "+421 905 112 233",
+                    email = "kovac@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:30 - 18:30, So 09:00 - 12:00",
+                    rating = 4.9,
+                    emergencyFeeNote = "Bežná ambulancia, očkovania, čipovanie, odbery",
+                    latitude = 48.1221,
+                    longitude = 17.1190,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 19L,
+                    name = "Veterinárna klinika Dúbravka",
+                    city = "Bratislava",
+                    address = "Saratovská 26, 841 02 Bratislava - Dúbravka",
+                    phone = "+421 2 644 11 22",
+                    email = "dubravka@vetba.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:30 - 19:00, So 09:00 - 12:00",
+                    rating = 4.8,
+                    emergencyFeeNote = "Interná medicína, vakcinácie a chirurgia mäkkých tkanív",
+                    latitude = 48.1920,
+                    longitude = 17.0340,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 20L,
+                    name = "Veterinárna ambulancia Pezinok",
+                    city = "Pezinok",
+                    address = "Moyzesova 18, 902 01 Pezinok",
+                    phone = "+421 33 640 12 34",
+                    email = "pezinok@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 18:00, So 09:00 - 12:00",
+                    rating = 4.7,
+                    emergencyFeeNote = "Prevencia, očkovania a zubný ultrazvuk",
+                    latitude = 48.2890,
+                    longitude = 17.2680,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 21L,
+                    name = "Veterinárna klinika Senec",
+                    city = "Senec",
+                    address = "Bratislavská 45, 903 01 Senec",
+                    phone = "+421 2 459 22 11",
+                    email = "senec@vetklinika.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:30 - 18:30, So 09:00 - 12:00",
+                    rating = 4.8,
+                    emergencyFeeNote = "Kompletné vyšetrenia, laboratórium a čipovanie",
+                    latitude = 48.2190,
+                    longitude = 17.3990,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 22L,
+                    name = "Veterinárna poliklinika Malacky",
+                    city = "Malacky",
+                    address = "Záhorácka 31, 901 01 Malacky",
+                    phone = "+421 34 772 14 55",
+                    email = "malacky@vetpoliklinika.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 18:00, So 08:30 - 12:00",
+                    rating = 4.7,
+                    emergencyFeeNote = "Chirurgia, stomatológia a pohotovostný telefón",
+                    latitude = 48.4360,
+                    longitude = 17.0220,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+
+                // ==================== TRNAVSKÝ KRAJ ====================
+                VetClinic(
+                    id = 23L,
+                    name = "Veterinárna nemocnica Trnava Nonstop",
+                    city = "Trnava",
+                    address = "Botanická 22, 917 08 Trnava",
+                    phone = "+421 33 550 11 22",
+                    email = "trnava@vetnemocnica.sk",
+                    is24hEmergency = true,
+                    openingHours = "NONSTOP 24/7",
+                    rating = 4.8,
+                    emergencyFeeNote = "Nonstop pohotovostný tím, RTG, JIS a hospitalizácia",
+                    latitude = 48.3710,
+                    longitude = 17.5850,
+                    clinicType = "Pohotovosť 24/7"
+                ),
+                VetClinic(
+                    id = 24L,
+                    name = "Veterinárna klinika Zavarská",
+                    city = "Trnava",
+                    address = "Zavarská 11, 917 01 Trnava",
+                    phone = "+421 918 456 789",
+                    email = "trnava@vetzavarska.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 19:00, So 08:30 - 12:00",
+                    rating = 4.7,
+                    emergencyFeeNote = "Všeobecná veterinárna starostlivosť a chirurgia mäkkých tkanív",
+                    latitude = 48.3750,
+                    longitude = 17.6025,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 25L,
+                    name = "Veterinárna ambulancia Piešťany",
+                    city = "Piešťany",
+                    address = "Bratislavská 88, 921 01 Piešťany",
+                    phone = "+421 33 774 12 34",
+                    email = "piestany@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 18:00, So 09:00 - 12:00",
+                    rating = 4.8,
+                    emergencyFeeNote = "Komplexná starostlivosť a laserová terapia",
+                    latitude = 48.5860,
+                    longitude = 17.8280,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 26L,
+                    name = "Veterinárne stredisko Hlohovec",
+                    city = "Hlohovec",
+                    address = "Nitrianska 12, 920 01 Hlohovec",
+                    phone = "+421 33 732 14 55",
+                    email = "hlohovec@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:30 - 17:30, So 09:00 - 11:30",
+                    rating = 4.7,
+                    emergencyFeeNote = "Všeobecná prax a preventívne prehliadky",
+                    latitude = 48.4280,
+                    longitude = 17.8010,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 27L,
+                    name = "Veterinárna ambulancia Senica",
+                    city = "Senica",
+                    address = "Sotinská 14, 905 01 Senica",
+                    phone = "+421 34 651 22 33",
+                    email = "senica@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 18:00, So 08:30 - 11:30",
+                    rating = 4.7,
+                    emergencyFeeNote = "Chirurgia, sono a laboratórne testy",
+                    latitude = 48.6810,
+                    longitude = 17.3680,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 28L,
+                    name = "Veterinárna klinika Dunajská Streda",
+                    city = "Dunajská Streda",
+                    address = "Hlavná 52, 929 01 Dunajská Streda",
+                    phone = "+421 31 552 44 00",
+                    email = "ds@vetklinika.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 18:00, So 08:30 - 12:00",
+                    rating = 4.8,
+                    emergencyFeeNote = "Dvojjazyčná obsluha (SK/HU), RTG, chirurgia",
+                    latitude = 47.9940,
+                    longitude = 17.6180,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 29L,
+                    name = "Veterinárna ambulancia Galanta",
+                    city = "Galanta",
+                    address = "Kpt. Nálepku 7, 924 01 Galanta",
+                    phone = "+421 31 780 15 22",
+                    email = "galanta@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:30 - 18:00, So 09:00 - 12:00",
+                    rating = 4.7,
+                    emergencyFeeNote = "Všeobecná medicína, očkovanie a kastrácie",
+                    latitude = 48.1900,
+                    longitude = 17.7280,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+
+                // ==================== TRENČIANSKY KRAJ ====================
+                VetClinic(
+                    id = 30L,
+                    name = "Veterinárna poliklinika Sibírska",
+                    city = "Trenčín",
+                    address = "Soblahovská 32, 911 01 Trenčín",
+                    phone = "+421 32 652 44 11",
+                    email = "trencin@vetpoliklinika.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 18:00, So 09:00 - 12:00",
+                    rating = 4.8,
+                    emergencyFeeNote = "Moderná diagnostika, stomatológia, RTG a sono",
+                    latitude = 48.8856,
+                    longitude = 18.0412,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 31L,
+                    name = "Pohotovostná veterinárna služba Trenčín 24/7",
+                    city = "Trenčín",
+                    address = "M. R. Štefánika 68, 911 01 Trenčín",
+                    phone = "+421 905 600 700",
+                    email = "pohotovost@vettrencin.sk",
+                    is24hEmergency = true,
+                    openingHours = "NONSTOP (24/7 pohotovostný príjem)",
+                    rating = 4.9,
+                    emergencyFeeNote = "Akútna hospitalizácia a nočná pohotovosť",
+                    latitude = 48.8920,
+                    longitude = 18.0470,
+                    clinicType = "Pohotovosť 24/7"
+                ),
+                VetClinic(
+                    id = 32L,
+                    name = "Veterinárna klinika Prievidza",
+                    city = "Prievidza",
+                    address = "Bojnická cesta 39, 971 01 Prievidza",
+                    phone = "+421 46 542 33 00",
+                    email = "prievidza@vetklinika.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:30 - 18:00, So 09:00 - 12:00",
+                    rating = 4.8,
+                    emergencyFeeNote = "Diagnostika, chirurgické zákroky a predaj krmív",
+                    latitude = 48.7750,
+                    longitude = 18.6050,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 33L,
+                    name = "Veterinárna klinika Považská Bystrica",
+                    city = "Považská Bystrica",
+                    address = "Centrum 16, 017 01 Považská Bystrica",
+                    phone = "+421 42 432 14 55",
+                    email = "pb@vetklinika.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 18:00, So 09:00 - 12:00",
+                    rating = 4.7,
+                    emergencyFeeNote = "RTG, sono, biochemické laboratórium",
+                    latitude = 49.1160,
+                    longitude = 18.4480,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 34L,
+                    name = "Veterinárna ambulancia Púchov",
+                    city = "Púchov",
+                    address = "Moravská 34, 020 01 Púchov",
+                    phone = "+421 42 463 22 11",
+                    email = "puchov@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:30 - 17:30, So 09:00 - 11:30",
+                    rating = 4.8,
+                    emergencyFeeNote = "Očkovanie, prevencia a chirurgia",
+                    latitude = 49.1240,
+                    longitude = 18.3260,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 35L,
+                    name = "Veterinárna ambulancia Partizánske",
+                    city = "Partizánske",
+                    address = "Generála Svobodu 8, 958 01 Partizánske",
+                    phone = "+421 38 749 22 88",
+                    email = "partizanske@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:30 - 17:30, So 09:00 - 11:30",
+                    rating = 4.7,
+                    emergencyFeeNote = "Všeobecná ambulantná prax",
+                    latitude = 48.6270,
+                    longitude = 18.3750,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 36L,
+                    name = "Veterinárna ambulancia Nové Mesto nad Váhom",
+                    city = "Nové Mesto nad Váhom",
+                    address = "Čsl. armády 18, 915 01 Nové Mesto nad Váhom",
+                    phone = "+421 32 771 22 44",
+                    email = "nmnv@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 18:00, So 09:00 - 12:00",
+                    rating = 4.7,
+                    emergencyFeeNote = "Preventívna a liečebná činnosť",
+                    latitude = 48.7560,
+                    longitude = 17.8300,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+
+                // ==================== NITRIANSKY KRAJ ====================
+                VetClinic(
+                    id = 37L,
+                    name = "Veterinárna nemocnica SPU Nitra Nonstop",
+                    city = "Nitra",
+                    address = "Akademická 2, 949 76 Nitra",
+                    phone = "+421 37 641 55 55",
+                    email = "nemocnica@spu.sk",
+                    is24hEmergency = true,
+                    openingHours = "NONSTOP 24/7",
+                    rating = 4.9,
+                    emergencyFeeNote = "Univerzitné klinické pracovisko, JIS, CT, špecializovaná chirurgia",
+                    latitude = 48.3040,
+                    longitude = 18.0930,
+                    clinicType = "Pohotovosť 24/7"
+                ),
+                VetClinic(
+                    id = 38L,
+                    name = "Veterinárne centrum Nitra",
+                    city = "Nitra",
+                    address = "Štefánikova trieda 70, 949 01 Nitra",
+                    phone = "+421 948 123 456",
+                    email = "nitra@vetcentrum.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 19:00, So 09:00 - 13:00",
+                    rating = 4.6,
+                    emergencyFeeNote = "Špecializovaná kardiológia, sono a dermatológia",
+                    latitude = 48.3061,
+                    longitude = 18.0863,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 39L,
+                    name = "Veterinárna ambulancia Nové Zámky",
+                    city = "Nové Zámky",
+                    address = "Gogoľova 14, 940 01 Nové Zámky",
+                    phone = "+421 35 640 11 22",
+                    email = "nz@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 18:00, So 09:00 - 12:00",
+                    rating = 4.7,
+                    emergencyFeeNote = "Preventívna a liečebná činnosť pre psy a mačky",
+                    latitude = 47.9856,
+                    longitude = 18.1611,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 40L,
+                    name = "Veterinárna klinika Levice",
+                    city = "Levice",
+                    address = "Kalvínske námestie 4, 934 01 Levice",
+                    phone = "+421 36 631 22 88",
+                    email = "levice@vetklinika.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 18:00, So 09:00 - 12:00",
+                    rating = 4.8,
+                    emergencyFeeNote = "RTG, sono a operačný sál",
+                    latitude = 48.2180,
+                    longitude = 18.6080,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 41L,
+                    name = "Veterinárna ambulancia Komárno",
+                    city = "Komárno",
+                    address = "Dunajské nábrežie 16, 945 01 Komárno",
+                    phone = "+421 35 770 12 34",
+                    email = "komarno@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 18:00, So 09:00 - 12:00",
+                    rating = 4.7,
+                    emergencyFeeNote = "Dvojjazyčná starostlivosť, čipovanie a pasy",
+                    latitude = 47.7630,
+                    longitude = 18.1320,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 42L,
+                    name = "Veterinárna klinika Topoľčany",
+                    city = "Topoľčany",
+                    address = "Stummerova 22, 955 01 Topoľčany",
+                    phone = "+421 38 532 11 44",
+                    email = "topolcany@vetklinika.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 18:00, So 09:00 - 12:00",
+                    rating = 4.7,
+                    emergencyFeeNote = "Chirurgia, stomatológia a vakcinácie",
+                    latitude = 48.5600,
+                    longitude = 18.1750,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 43L,
+                    name = "Veterinárna ambulancia Šaľa",
+                    city = "Šaľa",
+                    address = "Vlčanská 12, 927 01 Šaľa",
+                    phone = "+421 31 770 44 22",
+                    email = "sala@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:30 - 17:30, So 09:00 - 11:30",
+                    rating = 4.7,
+                    emergencyFeeNote = "Všeobecná starostlivosť a rýchle krvné testy",
+                    latitude = 48.1520,
+                    longitude = 17.8760,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+
+                // ==================== ŽILINSKÝ KRAJ ====================
+                VetClinic(
+                    id = 44L,
+                    name = "Veterinárna pohotovostná klinika Žilina 24/7",
+                    city = "Žilina",
+                    address = "Vysokoškolákov 8, 010 08 Žilina",
+                    phone = "+421 903 600 700",
+                    email = "kontakt@vetza.sk",
+                    is24hEmergency = true,
+                    openingHours = "NONSTOP (24/7 pohotovosť)",
+                    rating = 4.8,
+                    emergencyFeeNote = "Akútne zákroky, nočná pohotovosť na telefóne",
+                    latitude = 49.2155,
+                    longitude = 18.7523,
+                    clinicType = "Pohotovosť 24/7"
+                ),
+                VetClinic(
+                    id = 45L,
+                    name = "Veterinárna ambulancia Sever Martin",
+                    city = "Martin",
+                    address = "Jilemnického 22, 036 01 Martin",
+                    phone = "+421 43 422 11 00",
+                    email = "martin@vetsever.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:30 - 17:30, So 09:00 - 11:30",
+                    rating = 4.8,
+                    emergencyFeeNote = "Starostlivosť o malé zvieratá, čipovanie, pasy a dietetika",
+                    latitude = 49.0664,
+                    longitude = 18.9238,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 46L,
+                    name = "Veterinárna klinika Kysuce Čadca",
+                    city = "Čadca",
+                    address = "Májová 28, 022 01 Čadca",
+                    phone = "+421 41 433 22 11",
+                    email = "cadca@vetklinika.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 18:00, So 09:00 - 12:00",
+                    rating = 4.7,
+                    emergencyFeeNote = "Komplexné ošetrenie psov, mačiek a drobných cicavcov",
+                    latitude = 49.4380,
+                    longitude = 18.7890,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 47L,
+                    name = "Veterinárna ambulancia Orava Dolný Kubín",
+                    city = "Dolný Kubín",
+                    address = "Nemocničná 14, 026 01 Dolný Kubín",
+                    phone = "+421 43 586 22 44",
+                    email = "kubin@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 17:30, So 09:00 - 11:30",
+                    rating = 4.8,
+                    emergencyFeeNote = "Veterinárna starostlivosť pre celú dolnú Oravu",
+                    latitude = 49.2080,
+                    longitude = 19.2970,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 48L,
+                    name = "Veterinárna klinika Ružomberok",
+                    city = "Ružomberok",
+                    address = "Zarevúca 29, 034 01 Ružomberok",
+                    phone = "+421 44 432 15 66",
+                    email = "ruzomberok@vetklinika.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 18:00, So 09:00 - 12:00",
+                    rating = 4.8,
+                    emergencyFeeNote = "RTG, sono a chirurgická sála",
+                    latitude = 49.0760,
+                    longitude = 19.3080,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 49L,
+                    name = "Veterinárna ambulancia Liptov Liptovský Mikuláš",
+                    city = "Liptovský Mikuláš",
+                    address = "Garbiarska 19, 031 01 Liptovský Mikuláš",
+                    phone = "+421 908 667 788",
+                    email = "liptov@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 17:30, So 09:00 - 11:30",
+                    rating = 4.7,
+                    emergencyFeeNote = "Očkovanie, antiparazitárne programy, vyšetrenie uší a očí",
+                    latitude = 49.0833,
+                    longitude = 19.6167,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+
+                // ==================== PREŠOVSKÝ KRAJ ====================
+                VetClinic(
+                    id = 50L,
+                    name = "Veterinárna pohotovostná ambulancia Prešov 24/7",
+                    city = "Prešov",
+                    address = "Solivarská 28, 080 05 Prešov",
+                    phone = "+421 905 889 900",
+                    email = "pohotovost@vetpresov.sk",
+                    is24hEmergency = true,
+                    openingHours = "NONSTOP (24/7 pohotovosť na telefóne)",
+                    rating = 4.9,
+                    emergencyFeeNote = "Akútna hospitalizácia a nočné zásahy",
+                    latitude = 48.9820,
+                    longitude = 21.2580,
+                    clinicType = "Pohotovosť 24/7"
+                ),
+                VetClinic(
+                    id = 51L,
+                    name = "Veterinárna poliklinika Prešov",
+                    city = "Prešov",
+                    address = "Prostějovská 34, 080 01 Prešov - Sídlisko III",
+                    phone = "+421 51 771 99 22",
+                    email = "presov@vetpoliklinika.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 19:00, So 09:00 - 12:00",
+                    rating = 4.7,
+                    emergencyFeeNote = "Všeobecná prax, čistenie zubov ultrazvukom, sonografia",
+                    latitude = 49.0060,
+                    longitude = 21.2220,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 52L,
+                    name = "Veterinárna klinika Tatry Poprad",
+                    city = "Poprad",
+                    address = "Partizánska 88, 058 01 Poprad",
+                    phone = "+421 52 772 31 10",
+                    email = "tatry@vetpoprad.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:30 - 18:00, So 09:00 - 12:00 (Pohotovosť na tel.)",
+                    rating = 4.8,
+                    emergencyFeeNote = "Kompletné ošetrenie psov, mačiek a drobných cicavcov",
+                    latitude = 49.0543,
+                    longitude = 20.2976,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 53L,
+                    name = "Veterinárna ambulancia Bardejov",
+                    city = "Bardejov",
+                    address = "Dlhý rad 16, 085 01 Bardejov",
+                    phone = "+421 54 472 18 44",
+                    email = "bardejov@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 17:30, So 08:30 - 11:30",
+                    rating = 4.8,
+                    emergencyFeeNote = "Všeobecná medicína, odbery krvi, chirurgia",
+                    latitude = 49.2940,
+                    longitude = 21.2750,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 54L,
+                    name = "Veterinárna ambulancia Humenné",
+                    city = "Humenné",
+                    address = "Kukorelliho 22, 066 01 Humenné",
+                    phone = "+421 57 775 33 22",
+                    email = "humenne@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 17:30, So 09:00 - 11:30",
+                    rating = 4.7,
+                    emergencyFeeNote = "Očkovanie, antiparazitárna ochrana, sono",
+                    latitude = 48.9370,
+                    longitude = 21.9050,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 55L,
+                    name = "Veterinárna ambulancia Vranov nad Topľou",
+                    city = "Vranov nad Topľou",
+                    address = "Dlhopltecká 14, 093 01 Vranov nad Topľou",
+                    phone = "+421 57 442 11 00",
+                    email = "vranov@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 17:00, So 09:00 - 11:00",
+                    rating = 4.7,
+                    emergencyFeeNote = "Veterinárna starostlivosť a čipovanie",
+                    latitude = 48.8890,
+                    longitude = 21.6840,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 56L,
+                    name = "Veterinárne stredisko Stará Ľubovňa",
+                    city = "Stará Ľubovňa",
+                    address = "Mierová 42, 064 01 Stará Ľubovňa",
+                    phone = "+421 52 432 18 55",
+                    email = "lubovna@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 16:30, So 09:00 - 11:00",
+                    rating = 4.7,
+                    emergencyFeeNote = "Očkovanie, odčervenie, interná starostlivosť",
+                    latitude = 49.3010,
+                    longitude = 20.6900,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 57L,
+                    name = "Veterinárna ambulancia Kežmarok",
+                    city = "Kežmarok",
+                    address = "Tvarožnianska 9, 060 01 Kežmarok",
+                    phone = "+421 52 452 22 11",
+                    email = "kezmarok@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 17:00, So 08:30 - 11:00",
+                    rating = 4.7,
+                    emergencyFeeNote = "Prevencia a ošetrenie drobných zvierat",
+                    latitude = 49.1350,
+                    longitude = 20.4320,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+
+                // ==================== KOŠICKÝ KRAJ ====================
+                VetClinic(
+                    id = 58L,
+                    name = "Univerzitná veterinárna nemocnica UVLF 24h",
+                    city = "Košice",
+                    address = "Komenského 73, 041 81 Košice",
+                    phone = "+421 915 984 689",
+                    email = "nemocnica@uvlf.sk",
+                    is24hEmergency = true,
+                    openingHours = "NONSTOP pohotovosť 24/7",
+                    rating = 4.9,
+                    emergencyFeeNote = "Špičková klinika s JIS, pohotovostná chirurgická a interná služba",
+                    latitude = 48.7389,
+                    longitude = 21.2467,
+                    clinicType = "Pohotovosť 24/7"
+                ),
+                VetClinic(
+                    id = 59L,
+                    name = "Veterinárna ambulancia Terasa Košice",
+                    city = "Košice",
+                    address = "Trieda SNP 61, 040 11 Košice",
+                    phone = "+421 55 643 22 11",
+                    email = "terasa@vetke.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:30 - 18:30, So 09:00 - 12:00",
+                    rating = 4.8,
+                    emergencyFeeNote = "Praktický veterinár pre sídlisko a okolie, rýchle krvné testy",
+                    latitude = 48.7180,
+                    longitude = 21.2340,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 60L,
+                    name = "Veterinárna klinika Cassovet Košice",
+                    city = "Košice",
+                    address = "Karpatská 11, 040 01 Košice",
+                    phone = "+421 55 632 14 55",
+                    email = "cassovet@vetke.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 19:00, So 09:00 - 13:00",
+                    rating = 4.8,
+                    emergencyFeeNote = "Komplexná chirurgia mäkkých tkanív a ortopédia",
+                    latitude = 48.7290,
+                    longitude = 21.2580,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 61L,
+                    name = "Veterinárne stredisko Zemplín Michalovce",
+                    city = "Michalovce",
+                    address = "Hollého 58, 071 01 Michalovce",
+                    phone = "+421 56 642 18 55",
+                    email = "michalovce@vetzemplin.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 17:30, So 08:30 - 11:30",
+                    rating = 4.7,
+                    emergencyFeeNote = "Očkovanie, ošetrenie poranení, interná medicína",
+                    latitude = 48.7560,
+                    longitude = 21.9190,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 62L,
+                    name = "Veterinárna klinika Spiš Spišská Nová Ves",
+                    city = "Spišská Nová Ves",
+                    address = "Duklianska 32, 052 01 Spišská Nová Ves",
+                    phone = "+421 53 442 18 99",
+                    email = "spis@vetklinika.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 18:00, So 09:00 - 12:00",
+                    rating = 4.8,
+                    emergencyFeeNote = "RTG, sono a operačný sál pre región Spiš",
+                    latitude = 48.9430,
+                    longitude = 20.5620,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 63L,
+                    name = "Veterinárna ambulancia Trebišov",
+                    city = "Trebišov",
+                    address = "M. R. Štefánika 112, 075 01 Trebišov",
+                    phone = "+421 56 672 33 44",
+                    email = "trebisov@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 17:00, So 09:00 - 11:30",
+                    rating = 4.7,
+                    emergencyFeeNote = "Starostlivosť o malé aj hospodárske zvieratá",
+                    latitude = 48.6290,
+                    longitude = 21.7210,
+                    clinicType = "Veterinárna ambulancia"
+                ),
+                VetClinic(
+                    id = 64L,
+                    name = "Veterinárna ambulancia Rožňava",
+                    city = "Rožňava",
+                    address = "Šafárikova 48, 048 01 Rožňava",
+                    phone = "+421 58 732 14 22",
+                    email = "roznava@vetamb.sk",
+                    is24hEmergency = false,
+                    openingHours = "Po-Pia 08:00 - 17:00, So 08:30 - 11:00",
+                    rating = 4.7,
+                    emergencyFeeNote = "Všeobecná prax, čipovanie a chirurgia",
+                    latitude = 48.6600,
+                    longitude = 20.5340,
+                    clinicType = "Veterinárna ambulancia"
+                )
+            )
         }
     }
 }

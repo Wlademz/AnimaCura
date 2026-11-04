@@ -64,6 +64,8 @@ class PetRepository(private val database: AppDatabase) {
     // Vet Clinics
     val allClinics: Flow<List<VetClinic>> = database.vetClinicDao().getAllClinics()
     suspend fun insertClinic(clinic: VetClinic): Long = database.vetClinicDao().insertClinic(clinic)
+    suspend fun updateClinic(clinic: VetClinic) = database.vetClinicDao().updateClinic(clinic)
+    suspend fun deleteClinic(clinic: VetClinic) = database.vetClinicDao().deleteClinic(clinic)
 
     // Forum
     val allPosts: Flow<List<ForumPost>> = database.forumDao().getAllPosts()
