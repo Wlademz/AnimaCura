@@ -103,6 +103,7 @@ fun MedicalRecordsScreen(
     onToggleMedActive: (Medication) -> Unit,
     onExportClick: () -> Unit,
     onAssignDrugToPet: (VeterinaryDrug) -> Unit = {},
+    topContentPadding: androidx.compose.ui.unit.Dp = 0.dp,
     modifier: Modifier = Modifier
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -114,7 +115,11 @@ fun MedicalRecordsScreen(
     val photoCategories = listOf("Všetky", "Hojenie rany", "Zuby / Ústna dutina", "Kožný nález", "Lekárska správa / Recept", "Portrét")
     var selectedPhotoCategory by remember { mutableStateOf("Všetky") }
 
-    Column(modifier = modifier.fillMaxSize()) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(top = topContentPadding)
+    ) {
         ScrollableTabRow(
             selectedTabIndex = selectedTab,
             edgePadding = 12.dp,

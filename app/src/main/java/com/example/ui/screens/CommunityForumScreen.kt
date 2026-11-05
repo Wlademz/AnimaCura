@@ -70,6 +70,7 @@ fun CommunityForumScreen(
     onLikePost: (ForumPost) -> Unit,
     onAddComment: (Long, String, String) -> Unit,
     onNewPostClick: () -> Unit,
+    topContentPadding: androidx.compose.ui.unit.Dp = 0.dp,
     modifier: Modifier = Modifier
 ) {
     LaunchedEffect(Unit) {
@@ -84,146 +85,154 @@ fun CommunityForumScreen(
         posts.filter { it.petTypeTag.contains(selectedTag, ignoreCase = true) }
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = topContentPadding + 10.dp,
+            bottom = 16.dp
+        ),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        // Forum Header
+        item {
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 8.dp)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .size(38.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center
+                        .weight(1f)
+                        .padding(end = 8.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Forum,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(10.dp))
-                Column(modifier = Modifier.weight(1f, fill = false)) {
-                    Text(
-                        text = "Fórum & Poradňa",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = "Tipy, otázky a skúsenosti",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(
-                    onClick = onRefresh,
-                    modifier = Modifier.size(38.dp)
-                ) {
-                    if (isRefreshing) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    } else {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Obnoviť diskusie",
+                            imageVector = Icons.Default.Forum,
+                            contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f, fill = false)) {
+                        Text(
+                            text = "Fórum & Poradňa",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "Tipy, otázky a skúsenosti",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.width(4.dp))
-                Button(
-                    onClick = onNewPostClick,
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                    modifier = Modifier
-                        .height(38.dp)
-                        .testTag("new_post_button")
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(
+                        onClick = onRefresh,
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        if (isRefreshing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Obnoviť diskusie",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "Pridať",
-                        fontSize = 12.sp,
-                        maxLines = 1,
-                        softWrap = false,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    Button(
+                        onClick = onNewPostClick,
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                        modifier = Modifier
+                            .height(38.dp)
+                            .testTag("new_post_button")
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Pridať",
+                            fontSize = 12.sp,
+                            maxLines = 1,
+                            softWrap = false,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
             }
         }
 
         // Tags Filter
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            tags.forEach { tag ->
-                FilterChip(
-                    selected = selectedTag == tag,
-                    onClick = { selectedTag = tag },
-                    label = { Text(tag) }
-                )
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                tags.forEach { tag ->
+                    FilterChip(
+                        selected = selectedTag == tag,
+                        onClick = { selectedTag = tag },
+                        label = { Text(tag) }
+                    )
+                }
             }
         }
 
         if (filteredPosts.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Žiadne diskusie v tejto kategórii.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(filteredPosts, key = { it.id }) { post ->
-                    val isExpanded = selectedPostId == post.id
-                    val commentsForThisPost = allComments.filter { it.postId == post.id }
-                    ForumPostCard(
-                        post = post.copy(commentsCount = if (commentsForThisPost.isNotEmpty()) commentsForThisPost.size else post.commentsCount),
-                        isExpanded = isExpanded,
-                        comments = commentsForThisPost,
-                        onToggleExpand = {
-                            if (isExpanded) onSelectPost(null) else onSelectPost(post.id)
-                        },
-                        onLikeClick = { onLikePost(post) },
-                        onAddComment = { commentText, authorName ->
-                            onAddComment(post.id, commentText, authorName)
-                        }
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Žiadne diskusie v tejto kategórii.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+            }
+        } else {
+            items(filteredPosts, key = { it.id }) { post ->
+                val isExpanded = selectedPostId == post.id
+                val commentsForThisPost = allComments.filter { it.postId == post.id }
+                ForumPostCard(
+                    post = post.copy(commentsCount = if (commentsForThisPost.isNotEmpty()) commentsForThisPost.size else post.commentsCount),
+                    isExpanded = isExpanded,
+                    comments = commentsForThisPost,
+                    onToggleExpand = {
+                        if (isExpanded) onSelectPost(null) else onSelectPost(post.id)
+                    },
+                    onLikeClick = { onLikePost(post) },
+                    onAddComment = { commentText, authorName ->
+                        onAddComment(post.id, commentText, authorName)
+                    }
+                )
             }
         }
     }

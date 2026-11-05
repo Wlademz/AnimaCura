@@ -75,6 +75,7 @@ import com.example.data.local.entity.Pet
 fun ToxicityScreen(
     selectedPet: Pet?,
     onEmergencyCallClick: () -> Unit = {},
+    topContentPadding: androidx.compose.ui.unit.Dp = 0.dp,
     modifier: Modifier = Modifier
 ) {
     var searchQuery by remember { mutableStateOf("") }
@@ -112,7 +113,12 @@ fun ToxicityScreen(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
+            .padding(
+                start = 16.dp,
+                end = 16.dp,
+                top = topContentPadding + 10.dp,
+                bottom = 16.dp
+            ),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         // Hero Banner

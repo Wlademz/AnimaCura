@@ -103,6 +103,7 @@ fun EmergencyClinicsScreen(
     clinics: List<VetClinic>,
     onRateClinicClick: (VetClinic) -> Unit,
     onAddClinicClick: () -> Unit,
+    topContentPadding: androidx.compose.ui.unit.Dp = 0.dp,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -124,7 +125,12 @@ fun EmergencyClinicsScreen(
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(
+            start = 16.dp,
+            end = 16.dp,
+            top = topContentPadding + 10.dp,
+            bottom = 16.dp
+        ),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // Emergency & Ambulances Banner Header
@@ -209,39 +215,42 @@ fun EmergencyClinicsScreen(
         item {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     FilterChip(
                         selected = activeFilter == ClinicFilterType.ALL,
                         onClick = { activeFilter = ClinicFilterType.ALL },
-                        label = { Text("Všetky (${clinics.size})", fontSize = 11.sp) },
+                        label = { Text("Všetky (${clinics.size})", fontSize = 11.5.sp, maxLines = 1, softWrap = false) },
                         modifier = Modifier.testTag("filter_all_clinics")
                     )
                     FilterChip(
                         selected = activeFilter == ClinicFilterType.EMERGENCY_ONLY,
                         onClick = { activeFilter = ClinicFilterType.EMERGENCY_ONLY },
-                        label = { Text("🚨 24/7 Pohotovosť", fontSize = 11.sp) },
+                        label = { Text("🚨 24/7 Pohotovosť", fontSize = 11.5.sp, maxLines = 1, softWrap = false) },
                         modifier = Modifier.testTag("filter_emergency_toggle")
                     )
                     FilterChip(
                         selected = activeFilter == ClinicFilterType.AMBULANCE_ONLY,
                         onClick = { activeFilter = ClinicFilterType.AMBULANCE_ONLY },
-                        label = { Text("🏥 Ambulancie", fontSize = 11.sp) },
+                        label = { Text("🏥 Ambulancie", fontSize = 11.5.sp, maxLines = 1, softWrap = false) },
                         modifier = Modifier.testTag("filter_ambulance_toggle")
+                    )
+                    FilterChip(
+                        selected = activeFilter == ClinicFilterType.USER_RATED,
+                        onClick = { activeFilter = ClinicFilterType.USER_RATED },
+                        label = { Text("⭐ Moje hodnotené", fontSize = 11.5.sp, maxLines = 1, softWrap = false) },
+                        modifier = Modifier.testTag("filter_user_rated")
                     )
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    FilterChip(
-                        selected = activeFilter == ClinicFilterType.USER_RATED,
-                        onClick = { activeFilter = ClinicFilterType.USER_RATED },
-                        label = { Text("⭐ Moje hodnotené", fontSize = 11.sp) },
-                        modifier = Modifier.testTag("filter_user_rated")
-                    )
                     Text(
                         text = "${filteredClinics.size} zariadení",
                         style = MaterialTheme.typography.labelSmall,

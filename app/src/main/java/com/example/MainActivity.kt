@@ -56,7 +56,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.local.LicenseManager
@@ -213,30 +215,13 @@ fun MainAppContent(viewModel: PetViewModel) {
         NavItem("Fórum", Icons.Filled.Forum, Icons.Outlined.Forum, "nav_forum")
     )
 
+    var topBarHeightPx by remember { mutableIntStateOf(0) }
+    val density = LocalDensity.current
+    val topBarHeightDp = remember(topBarHeightPx, density) {
+        if (topBarHeightPx > 0) with(density) { topBarHeightPx.toDp() } else 125.dp
+    }
+
     Scaffold(
-        topBar = {
-            PetTopSelectorBar(
-                pets = pets,
-                selectedPet = selectedPet,
-                onSelectPet = { viewModel.selectPet(it) },
-                onAddPetClick = {
-                    if (LicenseManager.canAddPet(context, pets.size)) {
-                        showAddPetDialog = true
-                    } else {
-                        showPricingDialog = true
-                    }
-                },
-                onEditPetClick = { pet ->
-                    petToEditOrDelete = pet
-                    showEditPetDialog = true
-                },
-                onInfoClick = { showAboutDialog = true },
-                onChangePhotoClick = { pet ->
-                    petForPhotoChange = pet
-                    showPetPhotoDialog = true
-                }
-            )
-        },
         bottomBar = {
             NavigationBar(
                 modifier = Modifier
@@ -272,178 +257,220 @@ fun MainAppContent(viewModel: PetViewModel) {
         },
         modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding)) {
-            if (currentSecondaryScreen != null) {
-                BackHandler {
-                    currentSecondaryScreen = null
-                }
-                when (currentSecondaryScreen) {
-                    "toxicity" -> ToxicityScreen(
-                        selectedPet = selectedPet,
-                        onEmergencyCallClick = {
-                            currentSecondaryScreen = null
-                            currentNavIndex = 3
-                        }
-                    )
-                    "expenses" -> PetExpensesScreen(
-                        pet = selectedPet,
-                        expenses = expenses,
-                        onAddExpense = { title, category, amount, date, notes ->
-                            viewModel.addExpense(title, category, amount, date, notes)
-                        },
-                        onDeleteExpense = { viewModel.deleteExpense(it) }
-                    )
-                }
-            } else {
-                when (currentNavIndex) {
-                    0 -> DashboardScreen(
-                        pet = selectedPet,
-                        medications = medications,
-                        medicalRecords = medicalRecords,
-                        weightLogs = weightLogs,
-                        reminders = reminders,
-                        onAddRecordClick = { showAddRecordDialog = true },
-                        onAddMedClick = { showAddMedDialog = true },
-                        onAddWeightClick = { showAddWeightDialog = true },
-                        onAddReminderClick = { showAddReminderDialog = true },
-                        onEditReminder = { reminderToEdit = it },
-                        onDeleteReminder = { viewModel.deleteReminder(it) },
-                        onMarkDoseTaken = { viewModel.markDoseTaken(it) },
-                        onToggleReminder = { viewModel.toggleReminderCompleted(it) },
-                        onEmergencyClick = { currentNavIndex = 3 },
-                        onExportClick = { showExportDialog = true },
-                        onEditPetClick = { pet ->
-                            petToEditOrDelete = pet
-                            showEditPetDialog = true
-                        },
-                        onDeletePetClick = { pet ->
-                            petToEditOrDelete = pet
-                            showConfirmDeletePetDialog = true
-                        },
-                        onChangePhotoClick = { pet ->
-                            petForPhotoChange = pet
-                            showPetPhotoDialog = true
-                        },
-                        onScanBarcodeClick = { showBarcodeDialog = true },
-                        onQrSyncClick = { showQrSyncDialog = true },
-                        onToxicityClick = { currentSecondaryScreen = "toxicity" },
-                        onExpensesClick = { currentSecondaryScreen = "expenses" },
-                        onPrintPdfClick = { viewModel.printPetMedicalPassport(context) },
-                        onTestNotificationClick = {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = innerPadding.calculateBottomPadding())
+        ) {
+            // Main content area - takes full screen height, sliding underneath the transparent top bar when scrolled
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (currentSecondaryScreen != null) {
+                    BackHandler {
+                        currentSecondaryScreen = null
+                    }
+                    when (currentSecondaryScreen) {
+                        "toxicity" -> ToxicityScreen(
+                            selectedPet = selectedPet,
+                            topContentPadding = topBarHeightDp,
+                            onEmergencyCallClick = {
+                                currentSecondaryScreen = null
+                                currentNavIndex = 3
                             }
-                            showTestNotificationDialog = true
-                        }
-                    )
-
-                1 -> MedicalRecordsScreen(
-                    pet = selectedPet,
-                    medicalRecords = medicalRecords,
-                    medications = medications,
-                    photos = photos,
-                    latestWeight = weightLogs.firstOrNull()?.weightKg ?: selectedPet?.targetWeightKg,
-                    onAddRecordClick = {
-                        drugToAssign = null
-                        recordToEdit = null
-                        showAddRecordDialog = true
-                    },
-                    onEditRecordClick = { record ->
-                        recordToEdit = record
-                        showAddRecordDialog = true
-                    },
-                    onAddMedicationClick = {
-                        drugToAssign = null
-                        showAddMedDialog = true
-                    },
-                    onAddPhotoClick = {
-                        photoToEdit = null
-                        showAddPhotoDialog = true
-                    },
-                    onEditPhotoClick = { photo ->
-                        photoToEdit = photo
-                        showAddPhotoDialog = true
-                    },
-                    onDeleteRecord = { viewModel.deleteMedicalRecord(it) },
-                    onDeleteMedication = { viewModel.deleteMedication(it) },
-                    onDeletePhoto = { viewModel.deletePhoto(it) },
-                    onMarkDoseTaken = { viewModel.markDoseTaken(it) },
-                    onToggleMedActive = { viewModel.toggleMedicationActive(it) },
-                    onExportClick = { showExportDialog = true },
-                    onAssignDrugToPet = { drug ->
-                        drugToAssign = drug
-                        showAddMedDialog = true
+                        )
+                        "expenses" -> PetExpensesScreen(
+                            pet = selectedPet,
+                            expenses = expenses,
+                            topContentPadding = topBarHeightDp,
+                            onAddExpense = { title, category, amount, date, notes ->
+                                viewModel.addExpense(title, category, amount, date, notes)
+                            },
+                            onDeleteExpense = { viewModel.deleteExpense(it) }
+                        )
                     }
-                )
+                } else {
+                    when (currentNavIndex) {
+                        0 -> DashboardScreen(
+                            pet = selectedPet,
+                            medications = medications,
+                            medicalRecords = medicalRecords,
+                            weightLogs = weightLogs,
+                            reminders = reminders,
+                            topContentPadding = topBarHeightDp,
+                            onAddRecordClick = { showAddRecordDialog = true },
+                            onAddMedClick = { showAddMedDialog = true },
+                            onAddWeightClick = { showAddWeightDialog = true },
+                            onAddReminderClick = { showAddReminderDialog = true },
+                            onEditReminder = { reminderToEdit = it },
+                            onDeleteReminder = { viewModel.deleteReminder(it) },
+                            onMarkDoseTaken = { viewModel.markDoseTaken(it) },
+                            onToggleReminder = { viewModel.toggleReminderCompleted(it) },
+                            onEmergencyClick = { currentNavIndex = 3 },
+                            onExportClick = { showExportDialog = true },
+                            onEditPetClick = { pet ->
+                                petToEditOrDelete = pet
+                                showEditPetDialog = true
+                            },
+                            onDeletePetClick = { pet ->
+                                petToEditOrDelete = pet
+                                showConfirmDeletePetDialog = true
+                            },
+                            onChangePhotoClick = { pet ->
+                                petForPhotoChange = pet
+                                showPetPhotoDialog = true
+                            },
+                            onScanBarcodeClick = { showBarcodeDialog = true },
+                            onQrSyncClick = { showQrSyncDialog = true },
+                            onToxicityClick = { currentSecondaryScreen = "toxicity" },
+                            onExpensesClick = { currentSecondaryScreen = "expenses" },
+                            onPrintPdfClick = { viewModel.printPetMedicalPassport(context) },
+                            onTestNotificationClick = {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                    ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                                showTestNotificationDialog = true
+                            }
+                        )
 
-                2 -> WeightAndGalleryScreen(
-                    pet = selectedPet,
-                    weightLogs = weightLogs,
-                    onAddWeightClick = { showAddWeightDialog = true },
-                    onDeleteWeightLog = { viewModel.deleteWeightLog(it) }
-                )
+                        1 -> MedicalRecordsScreen(
+                            pet = selectedPet,
+                            medicalRecords = medicalRecords,
+                            medications = medications,
+                            photos = photos,
+                            latestWeight = weightLogs.firstOrNull()?.weightKg ?: selectedPet?.targetWeightKg,
+                            topContentPadding = topBarHeightDp,
+                            onAddRecordClick = {
+                                drugToAssign = null
+                                recordToEdit = null
+                                showAddRecordDialog = true
+                            },
+                            onEditRecordClick = { record ->
+                                recordToEdit = record
+                                showAddRecordDialog = true
+                            },
+                            onAddMedicationClick = {
+                                drugToAssign = null
+                                showAddMedDialog = true
+                            },
+                            onAddPhotoClick = {
+                                photoToEdit = null
+                                showAddPhotoDialog = true
+                            },
+                            onEditPhotoClick = { photo ->
+                                photoToEdit = photo
+                                showAddPhotoDialog = true
+                            },
+                            onDeleteRecord = { viewModel.deleteMedicalRecord(it) },
+                            onDeleteMedication = { viewModel.deleteMedication(it) },
+                            onDeletePhoto = { viewModel.deletePhoto(it) },
+                            onMarkDoseTaken = { viewModel.markDoseTaken(it) },
+                            onToggleMedActive = { viewModel.toggleMedicationActive(it) },
+                            onExportClick = { showExportDialog = true },
+                            onAssignDrugToPet = { drug ->
+                                drugToAssign = drug
+                                showAddMedDialog = true
+                            }
+                        )
 
-                3 -> EmergencyClinicsScreen(
-                    clinics = vetClinics,
-                    onRateClinicClick = { clinicToRate = it },
-                    onAddClinicClick = { showAddClinicDialog = true }
-                )
+                        2 -> WeightAndGalleryScreen(
+                            pet = selectedPet,
+                            weightLogs = weightLogs,
+                            topContentPadding = topBarHeightDp,
+                            onAddWeightClick = { showAddWeightDialog = true },
+                            onDeleteWeightLog = { viewModel.deleteWeightLog(it) }
+                        )
 
-                4 -> CommunityForumScreen(
-                    posts = forumPosts,
-                    allComments = allForumComments,
-                    selectedPostId = selectedPostId,
-                    isRefreshing = isRefreshingForum,
-                    onRefresh = { viewModel.refreshForum() },
-                    onSelectPost = { viewModel.selectPost(it) },
-                    onLikePost = { viewModel.toggleLikePost(it) },
-                    onAddComment = { postId, comment, author ->
-                        viewModel.addForumComment(postId, comment, author)
-                    },
-                    onNewPostClick = { showAddForumPostDialog = true }
-                )
-            }
+                        3 -> EmergencyClinicsScreen(
+                            clinics = vetClinics,
+                            topContentPadding = topBarHeightDp,
+                            onRateClinicClick = { clinicToRate = it },
+                            onAddClinicClick = { showAddClinicDialog = true }
+                        )
 
-            if (isUpdateReadyToInstall) {
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = RoundedCornerShape(14.dp),
-                    shadowElevation = 6.dp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp)
-                        .align(Alignment.BottomCenter)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        4 -> CommunityForumScreen(
+                            posts = forumPosts,
+                            allComments = allForumComments,
+                            selectedPostId = selectedPostId,
+                            isRefreshing = isRefreshingForum,
+                            topContentPadding = topBarHeightDp,
+                            onRefresh = { viewModel.refreshForum() },
+                            onSelectPost = { viewModel.selectPost(it) },
+                            onLikePost = { viewModel.toggleLikePost(it) },
+                            onAddComment = { postId, comment, author ->
+                                viewModel.addForumComment(postId, comment, author)
+                            },
+                            onNewPostClick = { showAddForumPostDialog = true }
+                        )
+                    }
+                }
+
+                if (isUpdateReadyToInstall) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = RoundedCornerShape(14.dp),
+                        shadowElevation = 6.dp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp)
+                            .align(Alignment.BottomCenter)
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Nová verzia je pripravená!",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                            Text(
-                                text = "Kliknite pre reštart a inštaláciu aktualizácie.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
-                            )
-                        }
-                        Button(
-                            onClick = { inAppUpdateManager.completeUpdate() }
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Inštalovať")
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Nová verzia je pripravená!",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                                Text(
+                                    text = "Kliknite pre reštart a inštaláciu aktualizácie.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
+                                )
+                            }
+                            Button(
+                                onClick = { inAppUpdateManager.completeUpdate() }
+                            ) {
+                                Text("Inštalovať")
+                            }
                         }
                     }
                 }
             }
+
+            // Top Bar floating with 65% transparency on top of the scrolling content
+            PetTopSelectorBar(
+                pets = pets,
+                selectedPet = selectedPet,
+                onSelectPet = { viewModel.selectPet(it) },
+                onAddPetClick = {
+                    if (LicenseManager.canAddPet(context, pets.size)) {
+                        showAddPetDialog = true
+                    } else {
+                        showPricingDialog = true
+                    }
+                },
+                onEditPetClick = { pet ->
+                    petToEditOrDelete = pet
+                    showEditPetDialog = true
+                },
+                onInfoClick = { showAboutDialog = true },
+                onChangePhotoClick = { pet ->
+                    petForPhotoChange = pet
+                    showPetPhotoDialog = true
+                },
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .onGloballyPositioned { coordinates ->
+                        topBarHeightPx = coordinates.size.height
+                    }
+            )
         }
     }
-}
 
     // Interactive Dialogs
     if (showAddPetDialog) {

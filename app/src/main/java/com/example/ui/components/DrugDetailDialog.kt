@@ -136,21 +136,24 @@ fun DrugDetailDialog(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Badges row: Forms & Target species & Prescription
-                Row(
+                // Badges: Forms & Target species & Prescription
+                @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                androidx.compose.foundation.layout.FlowRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        modifier = Modifier.padding(vertical = 2.dp)
+                        color = MaterialTheme.colorScheme.primaryContainer
                     ) {
                         Text(
                             text = drug.form,
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            maxLines = 1,
+                            softWrap = false,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                     }
@@ -158,14 +161,15 @@ fun DrugDetailDialog(
                     drug.targetSpecies.forEach { sp ->
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.secondaryContainer,
-                            modifier = Modifier.padding(vertical = 2.dp)
+                            color = MaterialTheme.colorScheme.secondaryContainer
                         ) {
                             Text(
                                 text = "🐾 $sp",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                maxLines = 1,
+                                softWrap = false,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
                         }
@@ -174,28 +178,30 @@ fun DrugDetailDialog(
                     if (drug.prescriptionRequired) {
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f),
-                            modifier = Modifier.padding(vertical = 2.dp)
+                            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f)
                         ) {
                             Text(
                                 text = "Rx Predpis",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.error,
+                                maxLines = 1,
+                                softWrap = false,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
                         }
                     } else {
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = Color(0xFF10B981).copy(alpha = 0.15f),
-                            modifier = Modifier.padding(vertical = 2.dp)
+                            color = Color(0xFF10B981).copy(alpha = 0.15f)
                         ) {
                             Text(
                                 text = "Voľnopredajný (OTC)",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF047857),
+                                maxLines = 1,
+                                softWrap = false,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
                         }

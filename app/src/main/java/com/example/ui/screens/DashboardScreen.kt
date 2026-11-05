@@ -100,6 +100,7 @@ fun DashboardScreen(
     onExpensesClick: () -> Unit = {},
     onPrintPdfClick: () -> Unit = {},
     onTestNotificationClick: () -> Unit = {},
+    topContentPadding: androidx.compose.ui.unit.Dp = 0.dp,
     modifier: Modifier = Modifier
 ) {
     val activeMeds = medications.filter { it.isActive }
@@ -109,7 +110,12 @@ fun DashboardScreen(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
+            .padding(
+                start = 16.dp,
+                end = 16.dp,
+                top = topContentPadding + 10.dp,
+                bottom = 16.dp
+            ),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         if (pet != null) {

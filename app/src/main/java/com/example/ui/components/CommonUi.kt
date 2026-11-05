@@ -88,31 +88,32 @@ fun PetTopSelectorBar(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 3.dp,
-        shadowElevation = 2.dp,
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.65f),
+        tonalElevation = 0.dp,
+        shadowElevation = 0.dp,
         modifier = modifier
             .fillMaxWidth()
             .statusBarsPadding()
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
-            // Full width panoramic banner image with Horse, Dog, Cat and Rabbit silhouettes (clean without any mock phone status bar)
+            // Full width panoramic banner image with 65% opacity
             Image(
                 painter = painterResource(id = R.drawable.pet_banner_panoramic_clean_1787729777947),
                 contentDescription = "Panoramatické zvieratká",
                 modifier = Modifier.matchParentSize(),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
+                alpha = 0.65f
             )
 
-            // Translucent overlay for clean contrast and readability
+            // Translucent overlay for clean contrast with 65% transparency
             Box(
                 modifier = Modifier
                     .matchParentSize()
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                MaterialTheme.colorScheme.surface.copy(alpha = 0.65f),
-                                MaterialTheme.colorScheme.surface.copy(alpha = 0.88f)
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0.50f),
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0.65f)
                             )
                         )
                     )
