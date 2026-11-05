@@ -78,6 +78,8 @@ import com.example.ui.components.AddReminderDialog
 import com.example.ui.components.AddWeightDialog
 import com.example.ui.components.RateClinicDialog
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.statusBars
 import com.example.ui.components.BarcodeScannerDialog
 import com.example.ui.components.ConfirmDeletePetDialog
 import com.example.ui.components.EditPetDialog
@@ -217,8 +219,9 @@ fun MainAppContent(viewModel: PetViewModel) {
 
     var topBarHeightPx by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
-    val topBarHeightDp = remember(topBarHeightPx, density) {
-        if (topBarHeightPx > 0) with(density) { topBarHeightPx.toDp() } else 125.dp
+    val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val topBarHeightDp = remember(topBarHeightPx, density, statusBarTop) {
+        if (topBarHeightPx > 0) with(density) { topBarHeightPx.toDp() } else (statusBarTop + 145.dp)
     }
 
     Scaffold(
@@ -272,6 +275,7 @@ fun MainAppContent(viewModel: PetViewModel) {
                         "toxicity" -> ToxicityScreen(
                             selectedPet = selectedPet,
                             topContentPadding = topBarHeightDp,
+                            onBackClick = { currentSecondaryScreen = null },
                             onEmergencyCallClick = {
                                 currentSecondaryScreen = null
                                 currentNavIndex = 3
@@ -281,6 +285,7 @@ fun MainAppContent(viewModel: PetViewModel) {
                             pet = selectedPet,
                             expenses = expenses,
                             topContentPadding = topBarHeightDp,
+                            onBackClick = { currentSecondaryScreen = null },
                             onAddExpense = { title, category, amount, date, notes ->
                                 viewModel.addExpense(title, category, amount, date, notes)
                             },

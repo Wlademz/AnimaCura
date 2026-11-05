@@ -72,6 +72,7 @@ import androidx.compose.runtime.setValue
 import com.example.data.local.entity.Reminder
 import com.example.data.local.entity.VetClinic
 import com.example.ui.theme.MedicalGreen
+import com.example.ui.theme.EmergencyRed
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -2146,7 +2147,6 @@ fun RateClinicDialog(
     onConfirm: (rating: Int, review: String) -> Unit
 ) {
     var selectedStars by remember { mutableIntStateOf(if (clinic.userRating > 0) clinic.userRating else 5) }
-    var reviewText by remember { mutableStateOf(clinic.userReview) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -2168,17 +2168,15 @@ fun RateClinicDialog(
         },
         text = {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Ako hodnotíte starostlivosť a prístup k zvieratku?",
-                    style = MaterialTheme.typography.bodySmall,
+                    text = "Ohodnoťte ambulanciu hviezdičkami:",
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // Star Rating Selector (1 to 5)
                 Row(
@@ -2189,51 +2187,37 @@ fun RateClinicDialog(
                         IconButton(
                             onClick = { selectedStars = star },
                             modifier = Modifier
-                                .size(44.dp)
+                                .size(48.dp)
                                 .testTag("star_rating_$star")
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Star,
                                 contentDescription = "$star hviezdičiek",
                                 tint = if (star <= selectedStars) Color(0xFFEAB308) else MaterialTheme.colorScheme.outlineVariant,
-                                modifier = Modifier.size(34.dp)
+                                modifier = Modifier.size(36.dp)
                             )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = when (selectedStars) {
-                        5 -> "⭐⭐⭐⭐⭐ Vynikajúci prístup & starostlivosť"
-                        4 -> "⭐⭐⭐⭐ Veľmi dobrá skúsenosť"
-                        3 -> "⭐⭐⭐ Priemerná návšteva"
-                        2 -> "⭐⭐ Zmiešané pocity / dlhé čakanie"
-                        else -> "⭐ Nespokojnosť s ošetrením"
+                        5 -> "⭐⭐⭐⭐⭐ Výborné (5/5)"
+                        4 -> "⭐⭐⭐⭐ Veľmi dobré (4/5)"
+                        3 -> "⭐⭐⭐ Priemerné (3/5)"
+                        2 -> "⭐⭐ Slabé (2/5)"
+                        else -> "⭐ Veľmi slabé (1/5)"
                     },
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = if (selectedStars >= 4) MedicalGreen else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = reviewText,
-                    onValueChange = { reviewText = it },
-                    label = { Text("Vaša osobná recenzia / skúsenosť") },
-                    placeholder = { Text("napr. Skvelá diagnostika, ochotný lekár, moderné vybavenie, primerané ceny...") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("clinic_review_input"),
-                    minLines = 3,
-                    maxLines = 5
+                    color = if (selectedStars >= 4) MedicalGreen else if (selectedStars == 3) Color(0xFFEAB308) else EmergencyRed
                 )
             }
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(selectedStars, reviewText.trim()) },
+                onClick = { onConfirm(selectedStars, "") },
                 modifier = Modifier.testTag("save_rating_button")
             ) {
                 Text("Uložiť hodnotenie")

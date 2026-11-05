@@ -1,10 +1,10 @@
 package com.example.data.local
 
-enum class ToxicityLevel(val label: String, val colorHex: Long) {
-    DEADLY("Smrteľne nebezpečné (Okamžite veterina)", 0xFFDC2626),
-    HIGH("Vysoké riziko otravy", 0xFFEA580C),
-    MODERATE("Mierne riziko / Opatrnosť", 0xFFEAB308),
-    SAFE("Bezpečné pre zvieratá", 0xFF16A34A)
+enum class ToxicityLevel(val label: String, val badgeText: String, val colorHex: Long) {
+    DEADLY("Smrteľne nebezpečné (Okamžite veterina)", "🚨 Smrteľne nebezpečné", 0xFFDC2626),
+    HIGH("Vysoké riziko otravy", "⚠️ Vysoké riziko", 0xFFEA580C),
+    MODERATE("Mierne riziko / Opatrnosť", "⚡ Mierne riziko", 0xFFEAB308),
+    SAFE("Bezpečné pre zvieratá", "✅ Bezpečné", 0xFF16A34A)
 }
 
 data class ToxicItem(

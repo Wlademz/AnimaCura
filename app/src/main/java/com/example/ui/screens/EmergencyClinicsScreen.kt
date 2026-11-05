@@ -68,8 +68,7 @@ import com.example.ui.theme.MedicalGreen
 enum class ClinicFilterType {
     ALL,
     EMERGENCY_ONLY,
-    AMBULANCE_ONLY,
-    USER_RATED
+    AMBULANCE_ONLY
 }
 
 fun removeAccents(input: String): String {
@@ -118,7 +117,6 @@ fun EmergencyClinicsScreen(
             ClinicFilterType.ALL -> true
             ClinicFilterType.EMERGENCY_ONLY -> clinic.is24hEmergency
             ClinicFilterType.AMBULANCE_ONLY -> !clinic.is24hEmergency
-            ClinicFilterType.USER_RATED -> clinic.userRating > 0
         }
         matchesQuery && matchesFilter
     }
@@ -238,12 +236,6 @@ fun EmergencyClinicsScreen(
                         onClick = { activeFilter = ClinicFilterType.AMBULANCE_ONLY },
                         label = { Text("🏥 Ambulancie", fontSize = 11.5.sp, maxLines = 1, softWrap = false) },
                         modifier = Modifier.testTag("filter_ambulance_toggle")
-                    )
-                    FilterChip(
-                        selected = activeFilter == ClinicFilterType.USER_RATED,
-                        onClick = { activeFilter = ClinicFilterType.USER_RATED },
-                        label = { Text("⭐ Moje hodnotené", fontSize = 11.5.sp, maxLines = 1, softWrap = false) },
-                        modifier = Modifier.testTag("filter_user_rated")
                     )
                 }
                 Row(
@@ -478,50 +470,6 @@ fun VetClinicCard(
                 )
             }
 
-            // User Rating and Review box if rated
-            if (clinic.userRating > 0) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = Color(0xFFFEF9C3), // warm light yellow
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(8.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "Vaše hodnotenie: ",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF854D0E)
-                            )
-                            repeat(clinic.userRating) {
-                                Icon(
-                                    imageVector = Icons.Default.Star,
-                                    contentDescription = null,
-                                    tint = Color(0xFFEAB308),
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "(${clinic.userRating}/5)",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF854D0E)
-                            )
-                        }
-                        if (clinic.userReview.isNotBlank()) {
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "„${clinic.userReview}“",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFF713F12)
-                            )
-                        }
-                    }
-                }
-            }
-
             Spacer(modifier = Modifier.height(12.dp))
 
             // Action Buttons (Call, Navigate, Rate)
@@ -585,7 +533,7 @@ fun VetClinicCard(
                     Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color(0xFFEAB308))
                     Spacer(modifier = Modifier.width(3.dp))
                     Text(
-                        text = if (clinic.userRating > 0) "Hodnotené" else "Hodnotiť",
+                        text = if (clinic.userRating > 0) "★ ${clinic.userRating}/5" else "Hodnotiť",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,

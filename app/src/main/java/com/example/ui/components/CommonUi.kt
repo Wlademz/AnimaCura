@@ -19,6 +19,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -91,11 +94,13 @@ fun PetTopSelectorBar(
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.65f),
         tonalElevation = 0.dp,
         shadowElevation = 0.dp,
-        modifier = modifier
-            .fillMaxWidth()
-            .statusBarsPadding()
+        modifier = modifier.fillMaxWidth()
     ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.statusBars)
+        ) {
             // Full width panoramic banner image with 65% opacity
             Image(
                 painter = painterResource(id = R.drawable.pet_banner_panoramic_clean_1787729777947),

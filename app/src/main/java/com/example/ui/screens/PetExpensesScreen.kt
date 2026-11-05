@@ -65,6 +65,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+
 @Composable
 fun PetExpensesScreen(
     pet: Pet?,
@@ -72,6 +74,7 @@ fun PetExpensesScreen(
     onAddExpense: (title: String, category: String, amount: Double, date: String, notes: String) -> Unit,
     onDeleteExpense: (Expense) -> Unit,
     topContentPadding: androidx.compose.ui.unit.Dp = 0.dp,
+    onBackClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
@@ -125,6 +128,32 @@ fun PetExpensesScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            if (onBackClick != null) {
+                item {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onBackClick() }
+                            .padding(vertical = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Späť",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Späť na prehľad",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+
             // Summary Cards
             item {
                 Row(
