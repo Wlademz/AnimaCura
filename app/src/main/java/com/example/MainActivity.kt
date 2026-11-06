@@ -3,6 +3,7 @@ package com.example
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -183,12 +184,6 @@ fun MainAppContent(viewModel: PetViewModel) {
     var isUpdateReadyToInstall by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        }
-
         val activity = context as? android.app.Activity
         inAppUpdateManager.checkForUpdate(
             onUpdateAvailable = { updateInfo ->
@@ -301,6 +296,7 @@ fun MainAppContent(viewModel: PetViewModel) {
                             weightLogs = weightLogs,
                             reminders = reminders,
                             topContentPadding = topBarHeightDp,
+                            onAddPetClick = { showAddPetDialog = true },
                             onAddRecordClick = { showAddRecordDialog = true },
                             onAddMedClick = { showAddMedDialog = true },
                             onAddWeightClick = { showAddWeightDialog = true },
@@ -637,6 +633,10 @@ fun MainAppContent(viewModel: PetViewModel) {
         AddReminderDialog(
             onDismiss = { showAddReminderDialog = false },
             onConfirm = { title, type, dueDate, dueTime, notes ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                    ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
                 viewModel.addReminder(title, type, dueDate, dueTime, notes)
                 showAddReminderDialog = false
             }
@@ -648,6 +648,10 @@ fun MainAppContent(viewModel: PetViewModel) {
             reminderToEdit = reminderToEdit,
             onDismiss = { reminderToEdit = null },
             onConfirm = { title, type, dueDate, dueTime, notes ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                    ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
                 viewModel.updateReminder(reminderToEdit!!, title, type, dueDate, dueTime, notes)
                 reminderToEdit = null
             },

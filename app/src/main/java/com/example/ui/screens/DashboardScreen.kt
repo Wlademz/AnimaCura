@@ -90,7 +90,8 @@ fun DashboardScreen(
     onMarkDoseTaken: (Medication) -> Unit,
     onToggleReminder: (Reminder) -> Unit,
     onEmergencyClick: () -> Unit = {},
-    onExportClick: () -> Unit,
+    onExportClick: () -> Unit = {},
+    onAddPetClick: () -> Unit = {},
     onEditPetClick: (Pet) -> Unit = {},
     onDeletePetClick: (Pet) -> Unit = {},
     onChangePhotoClick: ((Pet) -> Unit)? = null,
@@ -116,7 +117,7 @@ fun DashboardScreen(
                 top = topContentPadding + 10.dp,
                 bottom = 16.dp
             ),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         if (pet != null) {
             PetHeroSummaryCard(
@@ -130,25 +131,36 @@ fun DashboardScreen(
             )
         } else {
             Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
-                    modifier = Modifier.padding(24.dp),
+                    modifier = Modifier.padding(22.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Vytvorte si profil svojho zvieratka",
+                        text = "Vítajte v AnimaCura_SK! 🐾",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Evidujte všetky lieky, očkovania a vyšetrenia na jednom mieste.",
+                        text = "Pridajte svojho prvého chlpáča a majte očkovania, lieky a vyšetrenia pod kontrolou.",
                         style = MaterialTheme.typography.bodySmall,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Button(
+                        onClick = onAddPetClick,
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Pridať zvieratko")
+                    }
                 }
             }
         }

@@ -252,42 +252,6 @@ fun EmergencyClinicsScreen(
             }
         }
 
-        // Quick City Shortcuts
-        item {
-            val quickCities = listOf(
-                "Zvolen", "Banská Bystrica", "Bratislava", "Košice", "Žilina", "Prešov",
-                "Nitra", "Trnava", "Trenčín", "Poprad", "Martin", "Prievidza",
-                "Nové Zámky", "Piešťany", "Lučenec", "Ružomberok", "Michalovce", "Bardejov"
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                quickCities.forEach { city ->
-                    val isSelected = searchQuery.equals(city, ignoreCase = true)
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
-                        modifier = Modifier
-                            .clickable {
-                                searchQuery = if (isSelected) "" else city
-                            }
-                            .testTag("quick_city_$city")
-                    ) {
-                        Text(
-                            text = city,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                        )
-                    }
-                }
-            }
-        }
-
         if (filteredClinics.isEmpty()) {
             item {
                 Box(
