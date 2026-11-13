@@ -39,12 +39,10 @@ import androidx.compose.material.icons.filled.Emergency
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.Pets
-import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.outlined.Emergency
 import androidx.compose.material.icons.outlined.Forum
 import androidx.compose.material.icons.outlined.Medication
 import androidx.compose.material.icons.outlined.Pets
-import androidx.compose.material.icons.outlined.Scale
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -68,9 +66,8 @@ import com.example.data.local.entity.Pet
 import com.example.data.local.entity.PetPhoto
 import com.example.data.local.entity.Reminder
 import com.example.data.local.entity.VetClinic
+import com.example.data.local.entity.WeightLog
 import com.example.ui.components.AboutAppDialog
-import com.example.ui.components.AddClinicDialog
-import com.example.ui.components.AddForumPostDialog
 import com.example.ui.components.AddMedicalRecordDialog
 import com.example.ui.components.AddMedicationDialog
 import com.example.ui.components.AddPetDialog
@@ -97,7 +94,6 @@ import com.example.ui.screens.EmergencyClinicsScreen
 import com.example.ui.screens.MedicalRecordsScreen
 import com.example.ui.screens.PetExpensesScreen
 import com.example.ui.screens.ToxicityScreen
-import com.example.ui.screens.WeightAndGalleryScreen
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.viewmodel.PetViewModel
 
@@ -139,11 +135,10 @@ fun MainAppContent(viewModel: PetViewModel) {
     val reminders by viewModel.reminders.collectAsStateWithLifecycle()
     val photos by viewModel.photos.collectAsStateWithLifecycle()
     val vetClinics by viewModel.vetClinics.collectAsStateWithLifecycle()
-    val forumPosts by viewModel.forumPosts.collectAsStateWithLifecycle()
-    val selectedPostId by viewModel.selectedPostId.collectAsStateWithLifecycle()
-    val postComments by viewModel.postComments.collectAsStateWithLifecycle()
-    val allForumComments by viewModel.allForumComments.collectAsStateWithLifecycle()
-    val isRefreshingForum by viewModel.isRefreshingForum.collectAsStateWithLifecycle()
+    val onlineTopics by viewModel.onlineTopics.collectAsStateWithLifecycle()
+    val isRefreshingTopics by viewModel.isRefreshingTopics.collectAsStateWithLifecycle()
+    val topicsError by viewModel.topicsError.collectAsStateWithLifecycle()
+    val lastTopicsUpdatedStr by viewModel.lastTopicsUpdatedStr.collectAsStateWithLifecycle()
     val expenses by viewModel.expenses.collectAsStateWithLifecycle()
 
     var currentNavIndex by remember { mutableIntStateOf(0) }
@@ -161,14 +156,13 @@ fun MainAppContent(viewModel: PetViewModel) {
     var showAddMedDialog by remember { mutableStateOf(false) }
     var drugToAssign by remember { mutableStateOf<com.example.data.local.VeterinaryDrug?>(null) }
     var showAddWeightDialog by remember { mutableStateOf(false) }
+    var weightLogToEdit by remember { mutableStateOf<WeightLog?>(null) }
     var showAddPhotoDialog by remember { mutableStateOf(false) }
     var photoToEdit by remember { mutableStateOf<PetPhoto?>(null) }
     var showAddReminderDialog by remember { mutableStateOf(false) }
     var reminderToEdit by remember { mutableStateOf<Reminder?>(null) }
     var clinicToRate by remember { mutableStateOf<VetClinic?>(null) }
-    var showAddClinicDialog by remember { mutableStateOf(false) }
     var showExportDialog by remember { mutableStateOf(false) }
-    var showAddForumPostDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     var showEnterKeyDialog by remember { mutableStateOf(false) }
     var showPricingDialog by remember { mutableStateOf(false) }
@@ -207,9 +201,8 @@ fun MainAppContent(viewModel: PetViewModel) {
     val navItems = listOf(
         NavItem("Prehľad", Icons.Filled.Pets, Icons.Outlined.Pets, "nav_dashboard"),
         NavItem("Zdravie", Icons.Filled.Medication, Icons.Outlined.Medication, "nav_meds"),
-        NavItem("Váha", Icons.Filled.Scale, Icons.Outlined.Scale, "nav_weight"),
         NavItem("Pohotovosť", Icons.Filled.Emergency, Icons.Outlined.Emergency, "nav_emergency"),
-        NavItem("Fórum", Icons.Filled.Forum, Icons.Outlined.Forum, "nav_forum")
+        NavItem("Poradňa", Icons.Filled.Forum, Icons.Outlined.Forum, "nav_forum")
     )
 
     var topBarHeightPx by remember { mutableIntStateOf(0) }
@@ -273,7 +266,7 @@ fun MainAppContent(viewModel: PetViewModel) {
                             onBackClick = { currentSecondaryScreen = null },
                             onEmergencyCallClick = {
                                 currentSecondaryScreen = null
-                                currentNavIndex = 3
+                                currentNavIndex = 2
                             }
                         )
                         "expenses" -> PetExpensesScreen(
@@ -299,13 +292,12 @@ fun MainAppContent(viewModel: PetViewModel) {
                             onAddPetClick = { showAddPetDialog = true },
                             onAddRecordClick = { showAddRecordDialog = true },
                             onAddMedClick = { showAddMedDialog = true },
-                            onAddWeightClick = { showAddWeightDialog = true },
                             onAddReminderClick = { showAddReminderDialog = true },
                             onEditReminder = { reminderToEdit = it },
                             onDeleteReminder = { viewModel.deleteReminder(it) },
                             onMarkDoseTaken = { viewModel.markDoseTaken(it) },
                             onToggleReminder = { viewModel.toggleReminderCompleted(it) },
-                            onEmergencyClick = { currentNavIndex = 3 },
+                            onEmergencyClick = { currentNavIndex = 2 },
                             onExportClick = { showExportDialog = true },
                             onEditPetClick = { pet ->
                                 petToEditOrDelete = pet
@@ -338,7 +330,8 @@ fun MainAppContent(viewModel: PetViewModel) {
                             medicalRecords = medicalRecords,
                             medications = medications,
                             photos = photos,
-                            latestWeight = weightLogs.firstOrNull()?.weightKg ?: selectedPet?.targetWeightKg,
+                            weightLogs = weightLogs,
+                            latestWeight = weightLogs.sortedBy { it.timestamp }.lastOrNull()?.weightKg ?: selectedPet?.targetWeightKg,
                             topContentPadding = topBarHeightDp,
                             onAddRecordClick = {
                                 drugToAssign = null
@@ -361,6 +354,9 @@ fun MainAppContent(viewModel: PetViewModel) {
                                 photoToEdit = photo
                                 showAddPhotoDialog = true
                             },
+                            onAddWeightClick = { showAddWeightDialog = true },
+                            onEditWeightLog = { weightLogToEdit = it },
+                            onDeleteWeightLog = { viewModel.deleteWeightLog(it) },
                             onDeleteRecord = { viewModel.deleteMedicalRecord(it) },
                             onDeleteMedication = { viewModel.deleteMedication(it) },
                             onDeletePhoto = { viewModel.deletePhoto(it) },
@@ -373,34 +369,19 @@ fun MainAppContent(viewModel: PetViewModel) {
                             }
                         )
 
-                        2 -> WeightAndGalleryScreen(
-                            pet = selectedPet,
-                            weightLogs = weightLogs,
-                            topContentPadding = topBarHeightDp,
-                            onAddWeightClick = { showAddWeightDialog = true },
-                            onDeleteWeightLog = { viewModel.deleteWeightLog(it) }
-                        )
-
-                        3 -> EmergencyClinicsScreen(
+                        2 -> EmergencyClinicsScreen(
                             clinics = vetClinics,
                             topContentPadding = topBarHeightDp,
-                            onRateClinicClick = { clinicToRate = it },
-                            onAddClinicClick = { showAddClinicDialog = true }
+                            onRateClinicClick = { clinicToRate = it }
                         )
 
-                        4 -> CommunityForumScreen(
-                            posts = forumPosts,
-                            allComments = allForumComments,
-                            selectedPostId = selectedPostId,
-                            isRefreshing = isRefreshingForum,
+                        3 -> CommunityForumScreen(
+                            onlineTopics = onlineTopics,
+                            isRefreshing = isRefreshingTopics,
+                            topicsError = topicsError,
+                            lastUpdatedStr = lastTopicsUpdatedStr,
                             topContentPadding = topBarHeightDp,
-                            onRefresh = { viewModel.refreshForum() },
-                            onSelectPost = { viewModel.selectPost(it) },
-                            onLikePost = { viewModel.toggleLikePost(it) },
-                            onAddComment = { postId, comment, author ->
-                                viewModel.addForumComment(postId, comment, author)
-                            },
-                            onNewPostClick = { showAddForumPostDialog = true }
+                            onRefresh = { viewModel.refreshOnlineTopics() }
                         )
                     }
                 }
@@ -607,6 +588,21 @@ fun MainAppContent(viewModel: PetViewModel) {
         )
     }
 
+    if (weightLogToEdit != null) {
+        AddWeightDialog(
+            weightLogToEdit = weightLogToEdit,
+            onDismiss = { weightLogToEdit = null },
+            onConfirm = { weight, date, notes ->
+                viewModel.updateWeightLog(weightLogToEdit!!, weight, date, notes)
+                weightLogToEdit = null
+            },
+            onDelete = {
+                viewModel.deleteWeightLog(weightLogToEdit!!)
+                weightLogToEdit = null
+            }
+        )
+    }
+
     if (showAddPhotoDialog) {
         AddPhotoDialog(
             photoToEdit = null,
@@ -673,26 +669,6 @@ fun MainAppContent(viewModel: PetViewModel) {
         )
     }
 
-    if (showAddClinicDialog) {
-        AddClinicDialog(
-            onDismiss = { showAddClinicDialog = false },
-            onConfirm = { name, city, address, phone, email, is24h, openingHours, emergencyNote, type ->
-                viewModel.addCustomClinic(
-                    name = name,
-                    city = city,
-                    address = address,
-                    phone = phone,
-                    email = email,
-                    is24hEmergency = is24h,
-                    openingHours = openingHours,
-                    emergencyFeeNote = emergencyNote,
-                    clinicType = type
-                )
-                showAddClinicDialog = false
-            }
-        )
-    }
-
     if (showExportDialog && selectedPet != null) {
         ExportVetDialog(
             pet = selectedPet!!,
@@ -702,16 +678,6 @@ fun MainAppContent(viewModel: PetViewModel) {
             onDismiss = { showExportDialog = false },
             onSendEmail = { note ->
                 viewModel.exportMedicalRecordToVet(context, note)
-            }
-        )
-    }
-
-    if (showAddForumPostDialog) {
-        AddForumPostDialog(
-            onDismiss = { showAddForumPostDialog = false },
-            onConfirm = { title, content, author, tag ->
-                viewModel.addForumPost(title, content, author, tag)
-                showAddForumPostDialog = false
             }
         )
     }

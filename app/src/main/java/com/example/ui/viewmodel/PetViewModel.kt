@@ -20,6 +20,8 @@ import com.example.data.local.entity.PetPhoto
 import com.example.data.local.entity.Reminder
 import com.example.data.local.entity.VetClinic
 import com.example.data.local.entity.WeightLog
+import com.example.data.remote.OnlineTopic
+import com.example.data.remote.PetNewsRssRepository
 import com.example.data.repository.PetRepository
 import com.example.util.NotificationHelper
 import com.example.util.PdfExportHelper
@@ -60,6 +62,19 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     val allForumComments: StateFlow<List<ForumComment>>
     private val _isRefreshingForum = MutableStateFlow(false)
     val isRefreshingForum: StateFlow<Boolean> = _isRefreshingForum.asStateFlow()
+
+    // Live Online RSS Topics
+    private val _onlineTopics = MutableStateFlow<List<OnlineTopic>>(emptyList())
+    val onlineTopics: StateFlow<List<OnlineTopic>> = _onlineTopics.asStateFlow()
+
+    private val _isRefreshingTopics = MutableStateFlow(false)
+    val isRefreshingTopics: StateFlow<Boolean> = _isRefreshingTopics.asStateFlow()
+
+    private val _topicsError = MutableStateFlow<String?>(null)
+    val topicsError: StateFlow<String?> = _topicsError.asStateFlow()
+
+    private val _lastTopicsUpdatedStr = MutableStateFlow<String?>(null)
+    val lastTopicsUpdatedStr: StateFlow<String?> = _lastTopicsUpdatedStr.asStateFlow()
 
     // Search and filter states
     val clinicSearchQuery = MutableStateFlow("")
@@ -134,7 +149,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
             emptyList()
         )
 
-        refreshForum()
+        refreshOnlineTopics()
     }
 
     fun selectPet(petId: Long) {
@@ -418,15 +433,45 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // WEIGHT LOG OPERATIONS
+    private fun parseDateToMillis(dateStr: String, fallback: Long): Long {
+        return try {
+            val sdf = java.text.SimpleDateFormat("dd.MM.yyyy", java.util.Locale.getDefault())
+            sdf.isLenient = false
+            sdf.parse(dateStr.trim())?.time ?: fallback
+        } catch (_: Exception) {
+            fallback
+        }
+    }
+
     fun addWeightLog(weight: Double, date: String, notes: String) {
         val currentPetId = _selectedPetId.value ?: return
+        val now = System.currentTimeMillis()
+        val parsedTs = parseDateToMillis(date, now)
         viewModelScope.launch(Dispatchers.IO) {
             repository.insertWeightLog(
                 WeightLog(
                     petId = currentPetId,
                     date = date,
-                    timestamp = System.currentTimeMillis(),
+                    timestamp = parsedTs,
                     weightKg = weight,
+                    notes = notes
+                )
+            )
+        }
+    }
+
+    fun updateWeightLog(weightLog: WeightLog, weight: Double, date: String, notes: String) {
+        val updatedTs = if (date.trim() == weightLog.date.trim()) {
+            weightLog.timestamp
+        } else {
+            parseDateToMillis(date, weightLog.timestamp)
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.updateWeightLog(
+                weightLog.copy(
+                    weightKg = weight,
+                    date = date,
+                    timestamp = updatedTs,
                     notes = notes
                 )
             )
@@ -556,11 +601,11 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                     email = email,
                     is24hEmergency = is24hEmergency,
                     openingHours = openingHours,
-                    rating = 5.0,
+                    rating = 0.0,
                     emergencyFeeNote = emergencyFeeNote,
                     clinicType = clinicType,
-                    userRating = 5,
-                    userReview = "Pridané používateľom"
+                    userRating = 0,
+                    userReview = ""
                 )
             )
         }
@@ -672,6 +717,26 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
                 e.printStackTrace()
             } finally {
                 _isRefreshingForum.value = false
+            }
+        }
+    }
+
+    fun refreshOnlineTopics() {
+        if (_isRefreshingTopics.value) return
+        viewModelScope.launch(Dispatchers.IO) {
+            _isRefreshingTopics.value = true
+            try {
+                val result = PetNewsRssRepository.fetchLiveTopics(getApplication())
+                if (result.topics.isNotEmpty()) {
+                    _onlineTopics.value = result.topics
+                    val timeFmt = java.text.SimpleDateFormat("HH:mm", java.util.Locale("sk", "SK"))
+                    _lastTopicsUpdatedStr.value = timeFmt.format(java.util.Date())
+                }
+                _topicsError.value = result.errorMessage
+            } catch (e: Exception) {
+                _topicsError.value = "Nepodarilo sa načítať aktuálne témy (${e.localizedMessage ?: "chyba siete"})."
+            } finally {
+                _isRefreshingTopics.value = false
             }
         }
     }

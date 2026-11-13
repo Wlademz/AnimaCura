@@ -110,7 +110,7 @@ data class VetClinic(
     val email: String = "",
     val is24hEmergency: Boolean,
     val openingHours: String,
-    val rating: Double = 4.8,
+    val rating: Double = 0.0,
     val emergencyFeeNote: String = "Nonstop pohotovostný príjem",
     val latitude: Double = 48.1486,
     val longitude: Double = 17.1077,

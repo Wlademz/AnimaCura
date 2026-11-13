@@ -1660,17 +1660,31 @@ fun AddMedicationDialog(
 
 @Composable
 fun AddWeightDialog(
+    weightLogToEdit: WeightLog? = null,
     onDismiss: () -> Unit,
-    onConfirm: (weight: Double, date: String, notes: String) -> Unit
+    onConfirm: (weight: Double, date: String, notes: String) -> Unit,
+    onDelete: (() -> Unit)? = null
 ) {
-    var weight by remember { mutableStateOf("") }
+    var weight by remember(weightLogToEdit) {
+        mutableStateOf(weightLogToEdit?.weightKg?.toString() ?: "")
+    }
     val currentDateStr = remember { SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date()) }
-    var date by remember { mutableStateOf(currentDateStr) }
-    var notes by remember { mutableStateOf("") }
+    var date by remember(weightLogToEdit) {
+        mutableStateOf(weightLogToEdit?.date ?: currentDateStr)
+    }
+    var notes by remember(weightLogToEdit) {
+        mutableStateOf(weightLogToEdit?.notes ?: "")
+    }
+    val parsedWeight = weight.trim().replace(',', '.').toDoubleOrNull()
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Zaznamenať Hmotnosť", fontWeight = FontWeight.Bold) },
+        title = {
+            Text(
+                text = if (weightLogToEdit != null) "Upraviť Hmotnosť" else "Zaznamenať Hmotnosť",
+                fontWeight = FontWeight.Bold
+            )
+        },
         text = {
             Column {
                 OutlinedTextField(
@@ -1687,9 +1701,11 @@ fun AddWeightDialog(
                 OutlinedTextField(
                     value = date,
                     onValueChange = { date = it },
-                    label = { Text("Dátum váženia") },
+                    label = { Text("Dátum váženia (DD.MM.RRRR)") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("weight_date_input_field")
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 OutlinedTextField(
@@ -1697,19 +1713,40 @@ fun AddWeightDialog(
                     onValueChange = { notes = it },
                     label = { Text("Poznámka (napr. Po rannom kŕmení)") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("weight_notes_input_field")
                 )
+                if (weightLogToEdit != null && onDelete != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedButton(
+                        onClick = onDelete,
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("delete_weight_in_dialog_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Zmazať tento záznam")
+                    }
+                }
             }
         },
         confirmButton = {
             Button(
                 onClick = {
-                    val w = weight.toDoubleOrNull()
-                    if (w != null && w > 0) {
-                        onConfirm(w, date.trim(), notes.trim())
+                    if (parsedWeight != null && parsedWeight > 0) {
+                        onConfirm(parsedWeight, date.trim(), notes.trim())
                     }
                 },
-                enabled = weight.toDoubleOrNull() != null,
+                enabled = parsedWeight != null && parsedWeight > 0,
                 modifier = Modifier.testTag("submit_weight_button")
             ) {
                 Text("Uložiť")

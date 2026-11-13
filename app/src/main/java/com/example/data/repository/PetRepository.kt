@@ -46,6 +46,7 @@ class PetRepository(private val database: AppDatabase) {
     // Weight Logs
     fun getWeightLogsForPet(petId: Long): Flow<List<WeightLog>> = database.weightLogDao().getWeightLogsForPet(petId)
     suspend fun insertWeightLog(weightLog: WeightLog): Long = database.weightLogDao().insertWeightLog(weightLog)
+    suspend fun updateWeightLog(weightLog: WeightLog) = database.weightLogDao().updateWeightLog(weightLog)
     suspend fun deleteWeightLog(weightLog: WeightLog) = database.weightLogDao().deleteWeightLog(weightLog)
 
     // Reminders

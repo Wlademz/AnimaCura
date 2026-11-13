@@ -42,15 +42,21 @@ import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Scale
 import androidx.compose.material3.Badge
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -597,30 +603,94 @@ fun StatBadge(
 fun WeightSplineChart(
     weightLogs: List<WeightLog>,
     targetWeight: Double = 0.0,
+    onAddWeightClick: (() -> Unit)? = null,
+    onEditWeightLog: ((WeightLog) -> Unit)? = null,
+    onDeleteWeightLog: ((WeightLog) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    var showHistory by remember { mutableStateOf(false) }
+
     if (weightLogs.isEmpty()) {
         Card(
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
             modifier = modifier
                 .fillMaxWidth()
-                .height(180.dp)
+                .testTag("weight_spline_chart")
         ) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Outlined.Scale,
-                        contentDescription = "Prázdny graf",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                        modifier = Modifier.size(36.dp)
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "Zatiaľ žiadne záznamy váženia",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Krivka hmotnosti",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (targetWeight > 0.0) {
+                            Text(
+                                text = "Cieľová váha: $targetWeight kg",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    if (onAddWeightClick != null) {
+                        IconButton(
+                            onClick = onAddWeightClick,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .testTag("add_weight_chart_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Zapísať váhu",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(14.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Outlined.Scale,
+                            contentDescription = "Prázdny graf",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                            modifier = Modifier.size(34.dp)
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Zatiaľ žiadne záznamy váženia",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (onAddWeightClick != null) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Button(
+                                onClick = onAddWeightClick,
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.testTag("empty_weight_add_button")
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Zapísať prvú váhu", maxLines = 1, softWrap = false)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -635,6 +705,7 @@ fun WeightSplineChart(
 
     val primaryColor = MaterialTheme.colorScheme.primary
     val targetColor = WeightAmber
+    val canEditHistory = onEditWeightLog != null || onDeleteWeightLog != null
 
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -650,31 +721,97 @@ fun WeightSplineChart(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "Krivka hmotnosti",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
-                    Text(
-                        text = "Aktuálna: ${weights.lastOrNull() ?: 0.0} kg",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                if (targetWeight > 0.0) {
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = WeightAmber.copy(alpha = 0.15f)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = "Cieľ: $targetWeight kg",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = WeightAmber,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            text = "Aktuálna: ${weights.lastOrNull() ?: 0.0} kg",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            softWrap = false
                         )
+                        if (targetWeight > 0.0) {
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = WeightAmber.copy(alpha = 0.15f)
+                            ) {
+                                Text(
+                                    text = "Cieľ: $targetWeight kg",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = WeightAmber,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    if (canEditHistory) {
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (showHistory) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
+                            },
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable { showHistory = !showHistory }
+                                .testTag("toggle_weight_history_button")
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = if (showHistory) "Skryť úpravu váhy" else "Upraviť záznamy váhy",
+                                    tint = if (showHistory) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (showHistory) "Hotovo" else "Upraviť",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (showHistory) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
+                        }
+                    }
+
+                    if (onAddWeightClick != null) {
+                        IconButton(
+                            onClick = onAddWeightClick,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .testTag("add_weight_chart_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Zapísať váhu",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
             }
@@ -694,7 +831,6 @@ fun WeightSplineChart(
                     val usableHeight = height - paddingBottom - paddingTop
 
                     if (sortedLogs.size == 1) {
-                        // Single point
                         val y = paddingTop + usableHeight * (1f - ((sortedLogs[0].weightKg - minWeight) / weightRange).toFloat())
                         drawCircle(
                             color = primaryColor,
@@ -759,7 +895,7 @@ fun WeightSplineChart(
                     )
 
                     // Draw circles on points
-                    points.forEachIndexed { index, point ->
+                    points.forEach { point ->
                         drawCircle(
                             color = Color.White,
                             radius = 5.dp.toPx(),
@@ -789,6 +925,124 @@ fun WeightSplineChart(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+
+            // Expandable weight history with edit/delete right in Dashboard
+            AnimatedVisibility(visible = showHistory && canEditHistory) {
+                Column(modifier = Modifier.padding(top = 12.dp)) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    if (sortedLogs.size >= 2) {
+                        val firstW = sortedLogs.first().weightKg
+                        val lastW = sortedLogs.last().weightKg
+                        val diff = lastW - firstW
+                        val sign = if (diff > 0) "+" else ""
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Zmena od prvého váženia: $sign${String.format(java.util.Locale.getDefault(), "%.2f", diff)} kg ($firstW kg → $lastW kg)",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                    }
+
+                    Text(
+                        text = "História vážení (${sortedLogs.size})",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    sortedLogs.reversed().forEach { log ->
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 3.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable(enabled = onEditWeightLog != null) {
+                                    onEditWeightLog?.invoke(log)
+                                }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Text(
+                                            text = "${log.weightKg} kg",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = "• ${log.date}",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    if (log.notes.isNotBlank()) {
+                                        Text(
+                                            text = log.notes,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    if (onEditWeightLog != null) {
+                                        IconButton(
+                                            onClick = { onEditWeightLog(log) },
+                                            modifier = Modifier
+                                                .size(34.dp)
+                                                .testTag("edit_weight_log_${log.id}")
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Edit,
+                                                contentDescription = "Upraviť váženie",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+                                    if (onDeleteWeightLog != null) {
+                                        IconButton(
+                                            onClick = { onDeleteWeightLog(log) },
+                                            modifier = Modifier
+                                                .size(34.dp)
+                                                .testTag("delete_weight_log_${log.id}")
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = "Zmazať váženie",
+                                                tint = MaterialTheme.colorScheme.error,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }

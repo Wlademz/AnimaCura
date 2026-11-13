@@ -35,10 +35,13 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.MedicalServices
 import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Vaccines
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.LocalPharmacy
+import androidx.compose.material.icons.outlined.TrendingDown
+import androidx.compose.material.icons.outlined.TrendingUp
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.window.Dialog
@@ -80,9 +83,12 @@ import com.example.data.local.entity.MedicalRecord
 import com.example.data.local.entity.Medication
 import com.example.data.local.entity.Pet
 import com.example.data.local.entity.PetPhoto
+import com.example.data.local.entity.WeightLog
+import com.example.ui.components.WeightSplineChart
 import com.example.ui.theme.MedicalGreen
 import com.example.ui.theme.PillPurple
 import com.example.ui.theme.VaccineBlue
+import com.example.ui.theme.WeightAmber
 
 @Composable
 fun MedicalRecordsScreen(
@@ -90,12 +96,16 @@ fun MedicalRecordsScreen(
     medicalRecords: List<MedicalRecord>,
     medications: List<Medication>,
     photos: List<PetPhoto> = emptyList(),
+    weightLogs: List<WeightLog> = emptyList(),
     latestWeight: Double? = null,
     onAddRecordClick: () -> Unit,
     onEditRecordClick: (MedicalRecord) -> Unit = {},
     onAddMedicationClick: () -> Unit,
     onAddPhotoClick: () -> Unit = {},
     onEditPhotoClick: (PetPhoto) -> Unit = {},
+    onAddWeightClick: () -> Unit = {},
+    onEditWeightLog: (WeightLog) -> Unit = {},
+    onDeleteWeightLog: (WeightLog) -> Unit = {},
     onDeleteRecord: (MedicalRecord) -> Unit,
     onDeleteMedication: (Medication) -> Unit,
     onDeletePhoto: (PetPhoto) -> Unit = {},
@@ -107,7 +117,7 @@ fun MedicalRecordsScreen(
     modifier: Modifier = Modifier
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabTitles = listOf("Vyšetrenie", "Moje Lieky", "Databáza Liekov", "Fotogaléria & Hojenie", "Export")
+    val tabTitles = listOf("Vyšetrenie", "Moje Lieky", "Krivka hmotnosti", "Databáza Liekov", "Fotogaléria & Hojenie", "Export")
 
     val categories = listOf("Všetky", "Očkovanie", "Vyšetrenie", "Operácie", "Rozbor moču", "Krvné testy", "RTG / Sono", "Odčervenie", "Zuby")
     var selectedCategoryFilter by remember { mutableStateOf("Všetky") }
@@ -144,95 +154,96 @@ fun MedicalRecordsScreen(
         when (selectedTab) {
             0 -> {
                 // MEDICAL RECORDS & VACCINATIONS
-                Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Zdravotná História (${medicalRecords.size})",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.weight(1f, fill = false)
-                        )
-                        Button(
-                            onClick = onAddRecordClick,
-                            shape = RoundedCornerShape(12.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                            modifier = Modifier.testTag("add_record_screen_button")
+                val filteredRecords = if (selectedCategoryFilter == "Všetky") {
+                    medicalRecords
+                } else {
+                    medicalRecords.filter { record ->
+                        when (selectedCategoryFilter) {
+                            "Operácie" -> record.type.contains("Operácia", ignoreCase = true) || record.type.contains("Zákrok", ignoreCase = true)
+                            "Rozbor moču" -> record.type.contains("moč", ignoreCase = true)
+                            else -> record.type.contains(selectedCategoryFilter, ignoreCase = true)
+                        }
+                    }
+                }
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    item(key = "records_header") {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Pridať Záznam", fontSize = 12.sp, maxLines = 1)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    // Filters
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        categories.forEach { cat ->
-                            FilterChip(
-                                selected = selectedCategoryFilter == cat,
-                                onClick = { selectedCategoryFilter = cat },
-                                label = { Text(cat) }
+                            Text(
+                                text = "Zdravotná História (${medicalRecords.size})",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.weight(1f, fill = false)
                             )
+                            Button(
+                                onClick = onAddRecordClick,
+                                shape = RoundedCornerShape(12.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                                modifier = Modifier.testTag("add_record_screen_button")
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Pridať Záznam", fontSize = 12.sp, maxLines = 1, softWrap = false)
+                            }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    val filteredRecords = if (selectedCategoryFilter == "Všetky") {
-                        medicalRecords
-                    } else {
-                        medicalRecords.filter { record ->
-                            when (selectedCategoryFilter) {
-                                "Operácie" -> record.type.contains("Operácia", ignoreCase = true) || record.type.contains("Zákrok", ignoreCase = true)
-                                "Rozbor moču" -> record.type.contains("moč", ignoreCase = true)
-                                else -> record.type.contains(selectedCategoryFilter, ignoreCase = true)
+                    item(key = "records_filters") {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            categories.forEach { cat ->
+                                FilterChip(
+                                    selected = selectedCategoryFilter == cat,
+                                    onClick = { selectedCategoryFilter = cat },
+                                    label = { Text(cat, maxLines = 1, softWrap = false) }
+                                )
                             }
                         }
                     }
 
                     if (filteredRecords.isEmpty()) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(
-                                    imageVector = Icons.Default.MedicalServices,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                    modifier = Modifier.size(48.dp)
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "Žiadne záznamy v tejto kategórii",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                        item(key = "records_empty") {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 48.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(
+                                        imageVector = Icons.Default.MedicalServices,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                        modifier = Modifier.size(48.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "Žiadne záznamy v tejto kategórii",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                     } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(bottom = 100.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            items(filteredRecords, key = { it.id }) { record ->
-                                MedicalRecordCard(
-                                    record = record,
-                                    onEdit = { onEditRecordClick(record) },
-                                    onDelete = { onDeleteRecord(record) }
-                                )
-                            }
+                        items(filteredRecords, key = { it.id }) { record ->
+                            MedicalRecordCard(
+                                record = record,
+                                onEdit = { onEditRecordClick(record) },
+                                onDelete = { onDeleteRecord(record) }
+                            )
                         }
                     }
                 }
@@ -240,19 +251,23 @@ fun MedicalRecordsScreen(
 
             1 -> {
                 // MEDICATIONS & DOSAGE
-                Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Evidencia Liekov (${medications.size})",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.weight(1f, fill = false)
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    item(key = "meds_header") {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Evidencia Liekov (${medications.size})",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
                             Button(
                                 onClick = onAddMedicationClick,
                                 shape = RoundedCornerShape(12.dp),
@@ -262,95 +277,305 @@ fun MedicalRecordsScreen(
                             ) {
                                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Pridať", fontSize = 12.sp, maxLines = 1)
+                                Text("Pridať", fontSize = 12.sp, maxLines = 1, softWrap = false)
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    // Shortcut to Drug Database
-                    Card(
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { selectedTab = 2 }
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                    item(key = "meds_database_shortcut") {
+                        Card(
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedTab = 3 }
                         ) {
                             Row(
+                                modifier = Modifier.padding(12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f)
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Search,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Column {
-                                    Text(
-                                        text = "Otvoriť Databázu Liekov & Letáky",
-                                        style = MaterialTheme.typography.labelLarge,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Search,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
                                     )
-                                    Text(
-                                        text = "Bravecto, Apoquel, Meloxikam, NexGard, dávkovanie...",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Column {
+                                        Text(
+                                            text = "Otvoriť Databázu Liekov & Letáky",
+                                            style = MaterialTheme.typography.labelLarge,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                        Text(
+                                            text = "Bravecto, Apoquel, Meloxikam, NexGard, dávkovanie...",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
-
                     if (medications.isEmpty()) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(
-                                    imageVector = Icons.Default.Medication,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                                    modifier = Modifier.size(48.dp)
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "Zatiaľ neevidujete žiadne lieky.",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                        item(key = "meds_empty") {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 48.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(
+                                        imageVector = Icons.Default.Medication,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                        modifier = Modifier.size(48.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "Zatiaľ neevidujete žiadne lieky.",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                     } else {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(bottom = 100.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            items(medications, key = { it.id }) { med ->
-                                DetailedMedicationCard(
-                                    medication = med,
-                                    onTakeDose = { onMarkDoseTaken(med) },
-                                    onToggleActive = { onToggleMedActive(med) },
-                                    onDelete = { onDeleteMedication(med) }
-                                )
-                            }
+                        items(medications, key = { it.id }) { med ->
+                            DetailedMedicationCard(
+                                medication = med,
+                                onTakeDose = { onMarkDoseTaken(med) },
+                                onToggleActive = { onToggleMedActive(med) },
+                                onDelete = { onDeleteMedication(med) }
+                            )
                         }
                     }
                 }
             }
 
             2 -> {
+                // WEIGHT CURVE & HISTORY
+                val sortedWeights = remember(weightLogs) { weightLogs.sortedBy { it.timestamp } }
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    item(key = "weight_header") {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                                Text(
+                                    text = "Sledovanie Hmotnosti",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = if (pet != null && pet.targetWeightKg > 0.0) {
+                                        "Cieľová váha: ${pet.targetWeightKg} kg"
+                                    } else {
+                                        "Pravidelná kontrola hmotnosti"
+                                    },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Button(
+                                onClick = onAddWeightClick,
+                                shape = RoundedCornerShape(12.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                                modifier = Modifier.testTag("add_weight_zdravie_button")
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Nové Váženie", fontSize = 12.sp, maxLines = 1, softWrap = false)
+                            }
+                        }
+                    }
+
+                    item(key = "weight_chart_card") {
+                        WeightSplineChart(
+                            weightLogs = sortedWeights,
+                            targetWeight = pet?.targetWeightKg ?: 0.0,
+                            onAddWeightClick = onAddWeightClick
+                        )
+                    }
+
+                    if (sortedWeights.size >= 2) {
+                        item(key = "weight_trend_summary") {
+                            val firstW = sortedWeights.first().weightKg
+                            val lastW = sortedWeights.last().weightKg
+                            val diff = lastW - firstW
+                            val isLoss = diff < 0
+                            val sign = if (diff > 0) "+" else ""
+
+                            ElevatedCard(
+                                shape = RoundedCornerShape(14.dp),
+                                colors = CardDefaults.elevatedCardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = if (isLoss) Icons.Outlined.TrendingDown else Icons.Outlined.TrendingUp,
+                                        contentDescription = null,
+                                        tint = if (isLoss) Color(0xFF2563EB) else WeightAmber,
+                                        modifier = Modifier.size(28.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text(
+                                            text = "Zmena od prvého váženia: $sign${String.format(java.util.Locale.getDefault(), "%.2f", diff)} kg",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = "Prvé: $firstW kg → Aktuálne: $lastW kg",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    item(key = "weight_history_title") {
+                        Text(
+                            text = "História Vážení (${sortedWeights.size})",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+
+                    if (sortedWeights.isEmpty()) {
+                        item(key = "weight_history_empty") {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 24.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Zatiaľ žiadne záznamy váženia",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    } else {
+                        items(sortedWeights.reversed(), key = { it.id }) { log ->
+                            Card(
+                                shape = RoundedCornerShape(14.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .clickable { onEditWeightLog(log) }
+                                    .testTag("weight_log_card_${log.id}")
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(36.dp)
+                                                .clip(CircleShape)
+                                                .background(MaterialTheme.colorScheme.primaryContainer),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Scale,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Text(
+                                                    text = "${log.weightKg} kg",
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                                Text(
+                                                    text = "• ${log.date}",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                            if (log.notes.isNotBlank()) {
+                                                Text(
+                                                    text = log.notes,
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        IconButton(
+                                            onClick = { onEditWeightLog(log) },
+                                            modifier = Modifier
+                                                .size(34.dp)
+                                                .testTag("edit_weight_log_${log.id}")
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Edit,
+                                                contentDescription = "Upraviť váženie",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                        IconButton(
+                                            onClick = { onDeleteWeightLog(log) },
+                                            modifier = Modifier
+                                                .size(34.dp)
+                                                .testTag("delete_weight_log_${log.id}")
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = "Zmazať váženie",
+                                                tint = MaterialTheme.colorScheme.error,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            3 -> {
                 // VETERINARY DRUG DATABASE & LEAFLETS
                 VeterinaryDrugDatabaseScreen(
                     selectedPet = pet,
@@ -361,7 +586,7 @@ fun MedicalRecordsScreen(
                 )
             }
 
-            3 -> {
+            4 -> {
                 // PHOTO GALLERY & HEALING TRACKER
                 val filteredPhotos = if (selectedPhotoCategory == "Všetky") {
                     photos
@@ -460,7 +685,7 @@ fun MedicalRecordsScreen(
                 }
             }
 
-            4 -> {
+            5 -> {
                 // DIRECT EXPORT CARD
                 Column(
                     modifier = Modifier

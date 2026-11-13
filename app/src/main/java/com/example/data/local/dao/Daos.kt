@@ -89,6 +89,9 @@ interface WeightLogDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertWeightLog(weightLog: WeightLog): Long
 
+    @Update
+    suspend fun updateWeightLog(weightLog: WeightLog)
+
     @Delete
     suspend fun deleteWeightLog(weightLog: WeightLog)
 

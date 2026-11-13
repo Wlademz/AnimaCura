@@ -68,7 +68,6 @@ import com.example.data.local.entity.Pet
 import com.example.data.local.entity.Reminder
 import com.example.data.local.entity.WeightLog
 import com.example.ui.components.PetHeroSummaryCard
-import com.example.ui.components.WeightSplineChart
 import com.example.ui.theme.EmergencyRed
 import com.example.ui.theme.MedicalGreen
 import com.example.ui.theme.PillPurple
@@ -83,7 +82,6 @@ fun DashboardScreen(
     reminders: List<Reminder>,
     onAddRecordClick: () -> Unit = {},
     onAddMedClick: () -> Unit = {},
-    onAddWeightClick: () -> Unit = {},
     onAddReminderClick: () -> Unit = {},
     onEditReminder: (Reminder) -> Unit = {},
     onDeleteReminder: (Reminder) -> Unit = {},
@@ -105,7 +103,7 @@ fun DashboardScreen(
     modifier: Modifier = Modifier
 ) {
     val activeMeds = medications.filter { it.isActive }
-    val latestWeight = weightLogs.lastOrNull()?.weightKg
+    val latestWeight = weightLogs.sortedBy { it.timestamp }.lastOrNull()?.weightKg
 
     Column(
         modifier = modifier
@@ -432,14 +430,6 @@ fun DashboardScreen(
                     }
                 }
             }
-        }
-
-        // Weight Trend Preview
-        if (weightLogs.isNotEmpty() && pet != null) {
-            WeightSplineChart(
-                weightLogs = weightLogs,
-                targetWeight = pet.targetWeightKg
-            )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
